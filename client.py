@@ -2,9 +2,9 @@ import socket
 
 
 def main():
-    message_to_server = ""
+    message_to_send = ""
     sock_with_server = connect_to_server("127.0.0.1", 8989)
-    while message_to_server != "Exit":
+    while message_to_send != "Exit":
         message_to_send = input("Enter message('Exit' to exit):")
         print("response:", send_message_and_get_response(sock_with_server, message_to_send).decode())
     sock_with_server.close()
