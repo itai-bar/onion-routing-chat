@@ -12,15 +12,15 @@ import (
 	address string: "ip:port"
 */
 func RunServer(address string) {
-	l, err := net.Listen("tcp", address)
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal("error in listening: ", err)
 	}
-	defer l.Close() // will close the listener when the function exits
+	defer listener.Close() // will close the listener when the function exits
 	log.Println("Listening on ", address)
 
 	for {
-		conn, err := l.Accept() // new client
+		conn, err := listener.Accept() // new client
 		if err != nil {
 			log.Fatal("err on accepting client: ", err)
 		}
@@ -45,7 +45,6 @@ func HandleClient(conn net.Conn) {
 		}
 
 		log.Printf("client %s: %s\n", conn.RemoteAddr().String(), string(buf))
-
 		conn.Write([]byte("hello from the server"))
 
 		if string(buf) == "Exit" {
