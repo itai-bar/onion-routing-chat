@@ -1,5 +1,5 @@
 package main
 
 func main() {
-	RunServer("localhost:8989")
+	RunServer("127.0.0.1:8989")
 }

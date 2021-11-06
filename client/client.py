@@ -33,6 +33,7 @@ def connect_to_server(ip, port):
     # Connect the socket to the server
     server_address = (ip, port)
     sock.connect(server_address)
+    print('connected to ', server_address)
     return sock
 
 
