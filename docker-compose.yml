@@ -2,6 +2,7 @@ version: '3'
 
 services:
   chat_server:
+    network_mode: "host"
     build: ./chat_server
     volumes:
       - ./chat_server:/app
