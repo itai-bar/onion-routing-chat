@@ -14,17 +14,17 @@ import (
 func RunServer(address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatal("error in listening: ", err)
+		log.Fatal("Error in listening:\t", err)
 	}
 	defer listener.Close() // will close the listener when the function exits
-	log.Println("Listening on ", address)
+	log.Println("Listening on:\t", address)
 
 	for {
 		conn, err := listener.Accept() // new client
 		if err != nil {
-			log.Fatal("err on accepting client: ", err)
+			log.Fatal("Error on accepting client:\t", err)
 		}
-		log.Println("new client: ", conn.RemoteAddr().String())
+		log.Println("New client:\t", conn.RemoteAddr().String())
 
 		go HandleClient(conn) // new thread to handle the client
 	}
@@ -44,8 +44,8 @@ func HandleClient(conn net.Conn) {
 			continue
 		}
 
-		log.Printf("client %s: %s\n", conn.RemoteAddr().String(), string(buf))
-		conn.Write([]byte("hello from the server"))
+		log.Printf("Client %s:\t%s\n", conn.RemoteAddr().String(), string(buf))
+		conn.Write([]byte("hello"))
 
 		if string(buf) == "Exit" {
 			break

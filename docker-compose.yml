@@ -2,9 +2,8 @@ version: '3'
 
 services:
   chat_server:
-    network_mode: "host"
     build: ./chat_server
     volumes:
       - ./chat_server:/app
     ports:
-      - "127.0.0.1:8989:8989"
+      - 8989:8989
