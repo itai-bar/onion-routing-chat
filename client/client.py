@@ -1,5 +1,5 @@
 import socket
-
+import os
 
 def main():
     message_to_send = ""
@@ -35,6 +35,13 @@ def connect_to_server(ip, port):
     sock.connect(server_address)
     print('connected to ', server_address)
     return sock
+
+def get_nodes():
+    curr_path = os.path.dirname(__file__)
+    path_to_nodes = curr_path + r"\..\nodes.txt"
+
+    with open(path_to_nodes, "r") as nodes:
+        return [node.strip() for node in nodes.readlines()]
 
 
 if __name__ == "__main__":
