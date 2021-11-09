@@ -37,12 +37,41 @@ def connect_to_server(ip, port):
     return sock
 
 def get_nodes():
+    """get nodes from file
+
+    Returns:
+        list: ip's that stored in nodes.txt file
+    """
+    
     curr_path = os.path.dirname(__file__)
     path_to_nodes = curr_path + r"\..\nodes.txt"
 
     with open(path_to_nodes, "r") as nodes:
         return [node.strip() for node in nodes.readlines()]
+    
+
+
+def pad_ips(list_of_ips):
+    """this function get list of ip's not padding, for example 1.2.3.4 and return each padded 001.002.003.004
+
+    Args:
+        list_of_ips (list): ip's to pad, each byte to fill with 000
+
+    Returns:
+        list: padded ip's as list
+    """
+
+    padded_ip, padded_ips = [], []
+    
+    for ip in list_of_ips:
+        padded_ip = []
+        for byte in ip.split("."):
+            padded_ip.append(byte.zfill(3))
+        padded_ips.append(".".join(padded_ip))
+
+    return padded_ips
 
 
 if __name__ == "__main__":
     main()
+    print(pad_ips(get_nodes()))
