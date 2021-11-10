@@ -1,5 +1,6 @@
 import socket
 import os
+import sys
 
 def main():
     message_to_send = ""
@@ -45,18 +46,20 @@ def connect_to_server(ip, port):
     return sock
 
 def get_nodes():
-    """Get nodes from file
+    """Get nodes ip's from argv
 
     Returns:
         list: Ip's that stored in nodes.txt file
     """
 
-    curr_path = os.path.dirname(__file__)
-    path_to_nodes = curr_path + r"\..\nodes.txt"
-
-    with open(path_to_nodes, "r") as nodes:
-        return [node.strip() for node in nodes.readlines()]
-    
+    nodes = []
+    for i in range(1,4):
+        try:
+            nodes.append(sys.argv[i])
+        except IndexError as e:
+            print("Please enter 3 ip's as arguments: client.py ip1 ip2 ip3")
+            exit(0)
+    return nodes
 
 
 def pad_ips(list_of_ips):
