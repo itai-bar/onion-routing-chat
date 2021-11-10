@@ -11,6 +11,33 @@ def main():
     sock_with_server.close()
 
 
+def serializeDataTransferingMessage(message, nodes_ips, dst_ip):
+    """ Function creates protocoled message
+    data transfering message:
+        15 Bytes    (padded 2nd node ip)
+        15 Bytes    (padded 3rd node ip)
+        15 Bytes    (padded dst ip)
+        2 Bytes     (padded data size[max is 65535])
+        data size   (data)
+
+    Args:
+        message (string): message to send
+        nodes_ips (list(string)): ip's of 2nd node and 3rd node. all padded with pad_ips func
+        dst_ip (string): dstination ip padded with pad_ips func
+
+    Returns:
+        string: message suited to protocol
+    """
+
+    result = ""
+    result += "".join(nodes_ips)  # Each node remove exact amount of bytes because padding
+    result += dst_ip
+    result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
+    result += message
+    return result
+
+
+
 def send_message_and_get_response(sock_with_server, message_to_send):
     """The function send message to the given socket and return the response
 
@@ -49,39 +76,37 @@ def get_nodes():
     """Get nodes ip's from argv
 
     Returns:
-        list: Ip's that stored in nodes.txt file
+        list(string): Ip's that stored in nodes.txt file
     """
 
     nodes = []
-    for i in range(1,4):
+    for i in range(1,5):
         try:
             nodes.append(sys.argv[i])
         except IndexError as e:
-            print("Please enter 3 ip's as arguments: client.py ip1 ip2 ip3")
+            print("Please enter 4 ip's as arguments: client.py node_ip1 node_ip2 node_ip3 ip_of_destination")
             exit(0)
     return nodes
 
 
 def pad_ips(list_of_ips):
-    """This function get list of ip's not padding, for example 1.2.3.4 and return each padded 001.002.003.004
+    """This function get list of ip's not padded, for example 1.2.3.4 and return each ip padded 00000001.2.3.4
 
     Args:
-        list_of_ips (list): Ip's to pad, each byte to fill with 000
+        list_of_ips (list): Ip's to pad, fill with leading zeros to len 15
 
     Returns:
         list: Padded ip's as list
     """
 
-    padded_ip, padded_ips = [], []
+    padded_ips = []
     
     for ip in list_of_ips:
-        padded_ip = []
-        for byte in ip.split("."):
-            padded_ip.append(byte.zfill(3))
-        padded_ips.append(".".join(padded_ip))
+        padded_ips.append(ip.zfill(15))
 
     return padded_ips
 
 
 if __name__ == "__main__":
     main()
+
