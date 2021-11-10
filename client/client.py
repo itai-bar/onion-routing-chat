@@ -1,17 +1,23 @@
 import socket
-import os
 import sys
 
+ST_NODE_IP_IDX = 0
+ND_NODE_IP_IDX = 1
+RD_NODE_IP_IDX = 2
+DST_IP_IDX = 3
+
 def main():
-    message_to_send = ""
-    sock_with_server = connect_to_server("127.0.0.1", 8989)
-    while message_to_send != "Exit":
-        message_to_send = input("Enter message('Exit' to exit):")
+    message = ""
+    route_ips = get_nodes_and_dst_ips()  # [1st node, 2nd node, 3rd node, dst_ip]
+    sock_with_server = connect_to_server(route_ips[ST_NODE_IP_IDX], 8989)
+    while message != "Exit":
+        message = input("Enter message('Exit' to exit):")
+        message_to_send = serializeDataTransferingMessage(message, route_ips[ND_NODE_IP_IDX:])
         print("response:", send_message_and_get_response(sock_with_server, message_to_send).decode())
     sock_with_server.close()
 
 
-def serializeDataTransferingMessage(message, nodes_ips, dst_ip):
+def serializeDataTransferingMessage(message, route_ips):
     """ Function creates protocoled message
     data transfering message:
         15 Bytes    (padded 2nd node ip)
@@ -30,8 +36,7 @@ def serializeDataTransferingMessage(message, nodes_ips, dst_ip):
     """
 
     result = ""
-    result += "".join(nodes_ips)  # Each node remove exact amount of bytes because padding
-    result += dst_ip
+    result += "".join(route_ips)  # Each node remove exact amount of bytes because padding
     result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
     result += message
     return result
@@ -72,7 +77,7 @@ def connect_to_server(ip, port):
     print('connected to ', server_address)
     return sock
 
-def get_nodes():
+def get_nodes_and_dst_ips():
     """Get nodes ip's from argv
 
     Returns:
