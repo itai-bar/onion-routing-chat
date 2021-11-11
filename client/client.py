@@ -12,12 +12,12 @@ def main():
     sock_with_server = connect_to_server(route_ips[ST_NODE_IP_IDX], 8989)
     while message != "Exit":
         message = input("Enter message('Exit' to exit):")
-        message_to_send = serializeDataTransferingMessage(message, route_ips[ND_NODE_IP_IDX:])
+        message_to_send = serialize_data_transfering_message(message, route_ips[ND_NODE_IP_IDX:])
         print("response:", send_message_and_get_response(sock_with_server, message_to_send).decode())
     sock_with_server.close()
 
 
-def serializeDataTransferingMessage(message, route_ips):
+def serialize_data_transfering_message(message, route_ips):
     """ Function creates protocoled message
     data transfering message:
         15 Bytes    (padded 2nd node ip)
