@@ -10,14 +10,17 @@ def main():
     message = ""
     route_ips = get_nodes_and_dst_ips()  # [1st node, 2nd node, 3rd node, dst_ip]
     sock_with_server = connect_to_server(route_ips[ST_NODE_IP_IDX], 8989)
+    
     while message != "Exit":
         message = input("Enter message('Exit' to exit):")
-        message_to_send = serialize_data_transfering_message(message, route_ips[ND_NODE_IP_IDX:])
+        message_to_send = serialize_tor_message(message, route_ips[ND_NODE_IP_IDX:])
+        print(message_to_send)
         print("response:", send_message_and_get_response(sock_with_server, message_to_send).decode())
+        
     sock_with_server.close()
 
 
-def serialize_data_transfering_message(message, route_ips):
+def serialize_tor_message(message, route_ips):
     """ Function creates protocoled message
     data transfering message:
         15 Bytes    (padded 2nd node ip)
@@ -29,14 +32,14 @@ def serialize_data_transfering_message(message, route_ips):
     Args:
         message (string): message to send
         nodes_ips (list(string)): ip's of 2nd node and 3rd node. all padded with pad_ips func
-        dst_ip (string): dstination ip padded with pad_ips func
+        dst_ip (string): destination ip padded with pad_ips func
 
     Returns:
         string: message suited to protocol
     """
 
     result = ""
-    result += "".join(route_ips)  # Each node remove exact amount of bytes because padding
+    result += "".join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
     result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
     result += message
     return result
@@ -114,4 +117,3 @@ def pad_ips(list_of_ips):
 
 if __name__ == "__main__":
     main()
-
