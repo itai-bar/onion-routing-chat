@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"log"
 	"net"
 	"strconv"
@@ -57,19 +55,26 @@ func RunNode(address string) {
 */
 func TransferMessage(conn net.Conn) {
 	// reading the next node/dst ip
-	nextIp := make([]byte, IP_SEGMENT_SIZE)
-	_, err := conn.Read(nextIp)
+	nextIpBuf := make([]byte, IP_SEGMENT_SIZE)
+	_, err := conn.Read(nextIpBuf)
 	if err != nil {
 		log.Println("err: ", err)
 		return
 	}
 
+	nextIp := string(RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
+
 	// reading the rest of the message
-	var buf bytes.Buffer
-	io.Copy(&buf, conn)
+	buf, err := ReadAllFromSocket(conn)
+	if err != nil {
+		log.Println("err: ", err)
+		return
+	}
+
+	log.Printf("sending %s to %s", string(buf), nextIp)
 
 	// sending the rest of the message forward
-	resp, err := SendToNext(string(nextIp), buf.Bytes())
+	resp, err := SendToNextNode(nextIp, buf)
 	if err != nil {
 		log.Println("err: ", err)
 		return
@@ -90,7 +95,7 @@ func TransferMessage(conn net.Conn) {
 	should connect to it
 	req []byte: the req to send forward
 */
-func SendToNext(nextIp string, req []byte) ([]byte, error) {
+func SendToNextNode(nextIp string, req []byte) ([]byte, error) {
 	c, err := net.Dial("tcp", nextIp+":8989")
 	if err != nil {
 		return nil, err
@@ -99,6 +104,7 @@ func SendToNext(nextIp string, req []byte) ([]byte, error) {
 
 	// sending the request to the next part of the path
 	c.Write(req)
+	// from now we expect a response from the rest of the network
 
 	// reading data size
 	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
@@ -109,6 +115,8 @@ func SendToNext(nextIp string, req []byte) ([]byte, error) {
 
 	dataSize, _ := strconv.Atoi(string(dataSizeBuf))
 	data := make([]byte, dataSize)
+
+	log.Println("got data: ", string(data))
 	_, err = c.Read(data)
 	if err != nil {
 		return nil, err
@@ -116,4 +124,42 @@ func SendToNext(nextIp string, req []byte) ([]byte, error) {
 
 	// appending the data size and data back together
 	return append(dataSizeBuf, data...), nil
+}
+
+/*
+	removes every char c from the start of byte array s
+*/
+func RemoveLeadingChars(s []byte, c byte) []byte {
+	for i := range s {
+		if s[i] != c {
+			return s[i:]
+		}
+	}
+	return []byte{}
+}
+
+/*
+	reads from a socket
+*/
+func ReadAllFromSocket(conn net.Conn) ([]byte, error) {
+	buf := make([]byte, 32)
+	len := 0 // len counter
+
+	for {
+		n, err := conn.Read(buf[len:])
+		if err != nil {
+			break
+		}
+
+		if n > 0 {
+			len += n
+			if n < 32 {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	return buf[:len], nil
 }
