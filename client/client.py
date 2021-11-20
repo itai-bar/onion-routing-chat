@@ -38,6 +38,7 @@ def serialize_tor_message(message, route_ips):
         string: message suited to protocol
     """
 
+    message += '\0'
     result = ""
     result += "".join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
     result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems

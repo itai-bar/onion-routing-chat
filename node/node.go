@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"log"
 	"net"
 	"strconv"
@@ -8,7 +9,7 @@ import (
 
 const (
 	IP_SEGMENT_SIZE        = 15
-	DATA_SIZE_SEGMENT_SIZE = 2
+	DATA_SIZE_SEGMENT_SIZE = 5
 )
 
 /*
@@ -54,6 +55,7 @@ func RunNode(address string) {
 	conn net.Conn: connection with a client
 */
 func TransferMessage(conn net.Conn) {
+	defer conn.Close()
 	// reading the next node/dst ip
 	nextIpBuf := make([]byte, IP_SEGMENT_SIZE)
 	_, err := conn.Read(nextIpBuf)
@@ -65,7 +67,8 @@ func TransferMessage(conn net.Conn) {
 	nextIp := string(RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
 
 	// reading the rest of the message
-	buf, err := ReadAllFromSocket(conn)
+	bufReader := bufio.NewReader(conn)
+	buf, err := bufReader.ReadBytes(0)
 	if err != nil {
 		log.Println("err: ", err)
 		return
@@ -80,6 +83,7 @@ func TransferMessage(conn net.Conn) {
 		return
 	}
 
+	log.Println("sending back: ", string(resp))
 	// returning the resp to the original requester
 	conn.Write(resp)
 }
@@ -113,10 +117,8 @@ func SendToNextNode(nextIp string, req []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	dataSize, _ := strconv.Atoi(string(dataSizeBuf))
+	dataSize, _ := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
 	data := make([]byte, dataSize)
-
-	log.Println("got data: ", string(data))
 	_, err = c.Read(data)
 	if err != nil {
 		return nil, err
@@ -136,30 +138,4 @@ func RemoveLeadingChars(s []byte, c byte) []byte {
 		}
 	}
 	return []byte{}
-}
-
-/*
-	reads from a socket
-*/
-func ReadAllFromSocket(conn net.Conn) ([]byte, error) {
-	buf := make([]byte, 32)
-	len := 0 // len counter
-
-	for {
-		n, err := conn.Read(buf[len:])
-		if err != nil {
-			break
-		}
-
-		if n > 0 {
-			len += n
-			if n < 32 {
-				break
-			}
-		} else {
-			break
-		}
-	}
-
-	return buf[:len], nil
 }
