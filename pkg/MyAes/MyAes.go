@@ -1,54 +1,95 @@
-package myaes
+package MyAes
 
 import (
 	"crypto/aes"
-	"encoding/hex"
+	"crypto/cipher"
+	"crypto/rand"
+	"io"
 	"log"
 )
 
-/*
-	encrypt the plaintext with given aes key
-
-	key []byte: text of 128(16 bytes) bits or 256(32 bytes) bits
-	plaintext string: text to encrypt
-*/
-func EncryptAES(key []byte, plaintext string) string {
-	cipher, err := aes.NewCipher(key)
-	CheckError(err)
-
-	output := make([]byte, len(plaintext))
-
-	cipher.Encrypt(output, []byte(plaintext))
-
-	return hex.EncodeToString(output)
+type Aes struct {
+	key []byte
 }
 
 /*
-	decrypt the ciphertext with given aes key
+	creates new object of aes key with given key size
 
-	key []byte: text of 128(16 bytes) bits or 256(32 bytes) bits
-	ct string: text to decrypt
+	size int: key size
 */
-func DecryptAES(key []byte, ct string) string {
-	ciphertext, _ := hex.DecodeString(ct)
-
-	cipher, err := aes.NewCipher(key)
-	CheckError(err)
-
-	plaintext := make([]byte, len(ciphertext))
-
-	cipher.Decrypt(plaintext, []byte(ciphertext))
-
-	return string(plaintext)
+func NewAesSize(size int) *Aes {
+	key := make([]byte, size)
+	rand.Read(key)
+	return &Aes{key}
 }
 
 /*
-	check wheather happen error or not
+	creates new object of aes key with given key
 
-	err error: the given error
+	givenKey []byte: aes key
 */
-func CheckError(err error) {
+func NewAesGiveKey(givenKey []byte) *Aes {
+	return &Aes{givenKey}
+}
+
+/*
+	encrypt plaintext with the aes key 'self.key'
+
+	plaintext []byte: plaintext
+*/
+func (self *Aes) Encrypt(data []byte) []byte {
+	c, err := aes.NewCipher(self.key)
 	if err != nil {
-		log.Println("error occured:" + err.Error())
+		log.Println(err)
+		return nil
 	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return gcm.Seal(nonce, nonce, data, nil)
+}
+
+/*
+	decrypt ciphertext with the aes key 'self.key'
+
+	ciphertext []byte: encrypted text
+*/
+func (self *Aes) Decrypt(ciphertext []byte) []byte {
+	c, err := aes.NewCipher(self.key)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		log.Println(err)
+		return nil
+	}
+
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return plaintext
 }
