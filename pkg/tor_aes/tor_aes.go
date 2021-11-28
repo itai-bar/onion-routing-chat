@@ -1,4 +1,4 @@
-package MyAes
+package tor_aes
 
 import (
 	"crypto/aes"
