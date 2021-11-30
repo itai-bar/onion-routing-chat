@@ -4,8 +4,11 @@ from Crypto.Cipher import AES
 KEY_SIZE = 32
 
 class Aes:
-    def __init__(self):
-        self._key = Random.get_random_bytes(KEY_SIZE)
+    def __init__(self, key = None):
+        if key == None:
+            self._key = Random.get_random_bytes(KEY_SIZE)
+        else:
+            self._key = key
 
     def encrypt(self, buf):
         buf = self.pad(buf, AES.block_size)
