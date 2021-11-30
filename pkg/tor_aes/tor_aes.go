@@ -9,6 +9,8 @@ import (
 	"io"
 )
 
+const KEY_SIZE = 32
+
 type Aes struct {
 	Key []byte
 }
@@ -18,8 +20,8 @@ type Aes struct {
 
 	size int: key size
 */
-func NewAesSize(size int) *Aes {
-	key := make([]byte, size)
+func NewAesRandom() *Aes {
+	key := make([]byte, KEY_SIZE)
 	rand.Read(key)
 	return &Aes{key}
 }
@@ -29,7 +31,7 @@ func NewAesSize(size int) *Aes {
 
 	givenKey []byte: aes key
 */
-func NewAesGiveKey(givenKey []byte) *Aes {
+func NewAesGivenkey(givenKey []byte) *Aes {
 	return &Aes{givenKey}
 }
 
@@ -59,7 +61,7 @@ func (a *Aes) Encrypt(data string) (string, error) {
 }
 
 /*
-	decrypt ciphertext with the aes key 'self.key'
+	decrypt ciphertext with the aes key
 
 	ciphertext []byte: encrypted text
 */
