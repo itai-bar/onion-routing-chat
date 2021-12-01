@@ -1,32 +1,45 @@
 from Crypto import Random
+from Crypto import Cipher
 from Crypto.Cipher import AES
-
-KEY_SIZE = 32
+from base64 import b64encode, b64decode
 
 class Aes:
-    def __init__(self, key = None):
+    def __init__(self, key=None, key_size=32):
         if key == None:
-            self._key = Random.get_random_bytes(KEY_SIZE)
+            self._key = Random.get_random_bytes(key_size)
         else:
             self._key = key
+    
+    def encrypt(self, text: str) -> str:
+        """encrypted a given string using aes in CFB mode
 
-    def encrypt(self, buf):
-        buf = self.pad(buf, AES.block_size)
-        # a new random iv in every encryption
-        iv = Random.new().read(AES.block_size) 
-        cipher = AES.new(self._key, AES.MODE_CBC, iv)
-        return iv + cipher.encrypt(buf.encode())
- 
-    def decrypt(self, buf):
-        # getting the iv out
-        iv = buf[:AES.block_size] 
-        buf = buf[AES.block_size:]
+        Args:
+            text (str): aes encrypted string
 
-        cipher = AES.new(self._key, AES.MODE_CBC, iv)
-        return self.unpad(cipher.decrypt(buf)).decode()
+        Returns:
+            str: encrypted and base64 encoded string
+        """
+        rem = len(text) % 16
+        padded = str.encode(text) + (b'\0' * (16 - rem)) if rem > 0 else str.encode(text)
 
-    def pad(self, buf, size): 
-        return buf + (size - len(buf) % size) * chr(size - len(buf) % size)
+        iv = Random.new().read(AES.block_size)
+        cipher = AES.new(self._key, AES.MODE_CFB, iv, segment_size=128)
+        enc = cipher.encrypt(padded)[:len(text)]
+        return b64encode(iv + enc).decode()
+    
 
-    def unpad(self, buf):
-        return buf[:-ord(buf[len(buf)-1:])]
+    def decrypt(self, text: str) -> str:
+        """decrypts a message using aes in CFB mode and encoded with base64
+
+        Args:
+            text (str): an encrypted message
+
+        Returns:
+            str: the original message
+        """
+        text = b64decode(text) # the text was base64 encoded
+        iv, value = text[:16], text[16:] # extracting the iv from the text
+        rem = len(value) % 16
+        padded = value + (b'\0' * (16 - rem)) if rem > 0 else value 
+        cipher = AES.new(self._key, AES.MODE_CFB, iv, segment_size=128)
+        return cipher.decrypt(padded)[:len(value)].decode()
