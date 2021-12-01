@@ -4,33 +4,54 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
+	"encoding/pem"
+	"log"
 )
 
 type Rsa struct {
-	PublicKey  *rsa.PublicKey
-	PrivateKey *rsa.PrivateKey
+	PublicKey *rsa.PublicKey
 }
 
-// creates a new rsa structure with a random key
-func NewRsa() (*Rsa, error) {
-	// a 256 byte randomly generated key
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+/*
+	***The key using: sha256 and empty label***
+	This C'tor get RSA public_pem_key as bytes and return parsed key to user
+
+	public_pem_key []byte: -----BEGIN PUBLIC KEY-----key-----BEGIN PUBLIC KEY-----
+*/
+func NewRsaGivenPemPublicKey(public_pem_key []byte) *Rsa {
+	r := &Rsa{BytesToPublicKey(public_pem_key)}
+	return r
+}
+
+func BytesToPublicKey(pub []byte) *rsa.PublicKey {
+	block, _ := pem.Decode(pub)
+	b := block.Bytes
+
+	ifc, err := x509.ParsePKIXPublicKey(b)
 	if err != nil {
-		return nil, err
+		log.Println(err)
 	}
 
-	r := &Rsa{&privateKey.PublicKey, privateKey}
-	return r, nil
+	key, ok := ifc.(*rsa.PublicKey)
+	if !ok {
+		log.Println("not ok")
+	}
+
+	return key
 }
 
-// encrypts a given buffer with the rsa public key
-func (r *Rsa) Encrypt(buf []byte) []byte {
-	cipher, _ := rsa.EncryptOAEP(sha256.New(), rand.Reader, r.PublicKey, buf, []byte{})
-	return cipher
-}
+/*
+	Encrypts a given buffer with the rsa public key
 
-// decrypts given buffer with the rsa private key
-func (r *Rsa) Decrypt(buf []byte) []byte {
-	plaintext, _ := rsa.DecryptOAEP(sha256.New(), rand.Reader, r.PrivateKey, buf, []byte{})
-	return plaintext
+	data byte[]: data to encrypt
+*/
+func (r *Rsa) Encrypt(data []byte) []byte {
+	rng := rand.Reader
+	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rng, r.PublicKey, data, []byte{})
+	if err != nil {
+		log.Println(err)
+	}
+
+	return ciphertext
 }
