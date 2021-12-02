@@ -5,31 +5,23 @@ services:
     build:
       context: .
       dockerfile: ./cmd/chat_server/Dockerfile
-    volumes:
-      - .:/app
     ports:
       - 8989:8989
   node1:
     build:
       context: .
       dockerfile: ./cmd/node/Dockerfile
-    volumes:
-      - .:/app
     ports:
       - 8980:8989
   node2:
     build:
       context: .
       dockerfile: ./cmd/node/Dockerfile
-    volumes:
-      - .:/app
     ports:
       - 8981:8989
   node3:
     build:
       context: .
       dockerfile: ./cmd/node/Dockerfile
-    volumes:
-      - .:/app
     ports:
       - 8982:8989
