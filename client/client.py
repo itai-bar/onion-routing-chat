@@ -1,50 +1,22 @@
 import socket
 import sys
-
-ST_NODE_IP_IDX = 0
-ND_NODE_IP_IDX = 1
-RD_NODE_IP_IDX = 2
-DST_IP_IDX = 3
+import key_exchange as ke
+import const
+import serialize
 
 def main():
     message = ""
     route_ips = get_nodes_and_dst_ips()  # [1st node, 2nd node, 3rd node, dst_ip]
-    sock_with_server = connect_to_server(route_ips[ST_NODE_IP_IDX], 8989)
+    sock_with_server = connect_to_server(route_ips[const.ST_NODE_IP_IDX], 8989)
+    ke.key_exchange(route_ips, sock_with_server)
     
     while message != "Exit":
         message = input("Enter message('Exit' to exit):")
-        message_to_send = serialize_tor_message(message, route_ips[ND_NODE_IP_IDX:])
+        message_to_send = serialize.serialize_tor_message(message, route_ips[const.ND_NODE_IP_IDX:])
         print(message_to_send)
         print("response:", send_message_and_get_response(sock_with_server, message_to_send).decode())
         
     sock_with_server.close()
-
-
-def serialize_tor_message(message, route_ips):
-    """ Function creates protocoled message
-    data transfering message:
-        15 Bytes    (padded 2nd node ip)
-        15 Bytes    (padded 3rd node ip)
-        15 Bytes    (padded dst ip)
-        2 Bytes     (padded data size[max is 65535])
-        data size   (data)
-
-    Args:
-        message (string): message to send
-        nodes_ips (list(string)): ip's of 2nd node and 3rd node. all padded with pad_ips func
-        dst_ip (string): destination ip padded with pad_ips func
-
-    Returns:
-        string: message suited to protocol
-    """
-
-    message += '\0'
-    result = ""
-    result += "".join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
-    result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
-    result += message
-    return result
-
 
 
 def send_message_and_get_response(sock_with_server, message_to_send):
@@ -96,24 +68,6 @@ def get_nodes_and_dst_ips():
             print("Please enter 4 ip's as arguments: client.py node_ip1 node_ip2 node_ip3 ip_of_destination")
             exit(0)
     return nodes
-
-
-def pad_ips(list_of_ips):
-    """This function get list of ip's not padded, for example 1.2.3.4 and return each ip padded 00000001.2.3.4
-
-    Args:
-        list_of_ips (list): Ip's to pad, fill with leading zeros to len 15
-
-    Returns:
-        list: Padded ip's as list
-    """
-
-    padded_ips = []
-    
-    for ip in list_of_ips:
-        padded_ips.append(ip.zfill(15))
-
-    return padded_ips
 
 
 if __name__ == "__main__":
