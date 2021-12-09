@@ -8,7 +8,7 @@ def key_exchange(ip_path, sock_with_first_node : socket.socket):
     rsa_obj = crypto.Rsa()  # creating Rsa class with random keypair
     aes_keys = []  # list of aes.Aes keys
     for idx, ip in enumerate(ip_path): # entering this after exchanged keys with first node
-        message = const.KEEP_SOCKET_FLAG + len(rsa_obj.pem_public_key) + rsa_obj.pem_public_key
+        message = const.KEEP_SOCKET_FLAG + str(len(rsa_obj.pem_public_key)) + rsa_obj.pem_public_key
 
         if idx > const.ST_NODE_IP_IDX:
             message = serialize_tor_message(message, ip_path[1:idx+1])
