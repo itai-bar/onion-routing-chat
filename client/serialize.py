@@ -19,7 +19,7 @@ def serialize_tor_message(message, route_ips):
     """
 
     message += '\0'
-    result = const.TRANSFER_MESSAGE_CODE + const.TRANSFER_MESSAGE_CODE.join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
+    result = const.CLOSE_SOCKET_FLAG + const.CLOSE_SOCKET_FLAG.join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
     result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
     result += message
     return result
