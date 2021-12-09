@@ -5,12 +5,21 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"torbasedchat/pkg/tor_aes"
+	"torbasedchat/pkg/tor_rsa"
 )
 
 const (
+	CLOSE_SOCKET_SIZE      = 1
 	IP_SEGMENT_SIZE        = 15
 	DATA_SIZE_SEGMENT_SIZE = 5
 )
+
+type TorHeaders struct {
+	closeSocket int
+	nextIp      string
+	rest        []byte
+}
 
 /*
 	runs the server on a given address
@@ -33,15 +42,38 @@ func RunNode(address string) {
 		}
 		log.Println("New client:\t", conn.RemoteAddr().String())
 
-		go TransferMessage(conn) // new thread to handle the client
+		go HandleClient(conn) // new thread to handle the client
+	}
+}
+
+func HandleClient(conn net.Conn) {
+	// first we do a key exchange with the client
+	ExchangeKey(conn)
+
+	// the transfering loop will end once
+	// the client will turn the CLOSE_SOCKET flag on
+	for {
+		headers := GetTorHeaders(conn)
+		nextNodeConn, err := net.Dial("tcp", headers.nextIp+":8989")
+		if err != nil {
+			panic(err)
+		}
+
+		conn.Write(TransferMessage(nextNodeConn, headers.rest))
+
+		if headers.closeSocket == 1 {
+			conn.Close()
+			nextNodeConn.Close()
+			break
+		}
 	}
 }
 
 /*
-	handles connection with a client
-	for now there is only one available service - transfering data
+	getting headers of tor message from the socket
 
 	data transfering message:
+		1 Byte		(close socket flag)
 		15 Bytes 	(2nd node ip)
 		15 Bytes 	(3rd node ip)
 		15 Bytes 	(dst ip)
@@ -54,78 +86,93 @@ func RunNode(address string) {
 
 	conn net.Conn: connection with a client
 */
-func TransferMessage(conn net.Conn) {
-	defer conn.Close()
+func GetTorHeaders(clientConn net.Conn) *TorHeaders {
+	closeSocketBuf := make([]byte, CLOSE_SOCKET_SIZE)
+	_, err := clientConn.Read(closeSocketBuf)
+	if err != nil {
+		panic(err)
+	}
+
+	closeSocket, _ := strconv.Atoi(string(closeSocketBuf))
+
 	// reading the next node/dst ip
 	nextIpBuf := make([]byte, IP_SEGMENT_SIZE)
-	_, err := conn.Read(nextIpBuf)
+	_, err = clientConn.Read(nextIpBuf)
 	if err != nil {
-		log.Println("err: ", err)
-		return
+		panic(err)
 	}
 
 	nextIp := string(RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
 
 	// reading the rest of the message
-	bufReader := bufio.NewReader(conn)
-	buf, err := bufReader.ReadBytes(0)
+	bufReader := bufio.NewReader(clientConn)
+	rest, err := bufReader.ReadBytes(0)
 	if err != nil {
-		log.Println("err: ", err)
-		return
+		panic(err)
 	}
 
-	log.Printf("sending %s to %s", string(buf), nextIp)
-
-	// sending the rest of the message forward
-	resp, err := SendToNextNode(nextIp, buf)
-	if err != nil {
-		log.Println("err: ", err)
-		return
-	}
-
-	log.Println("sending back: ", string(resp))
-	// returning the resp to the original requester
-	conn.Write(resp)
+	return &TorHeaders{closeSocket, nextIp, rest}
 }
 
 /*
-	sending the message to a given ip, wating for response
+	sending the message to a given connection, wating for response
 	that looks likes that:
 		2 Bytes 	(data size)
 		data size 	(data)
 	and returns it
 
-	nextIp string: the ip cutted from the original data,
-	should connect to it
+	conn net.Conn: connection with next node or final dst
 	req []byte: the req to send forward
 */
-func SendToNextNode(nextIp string, req []byte) ([]byte, error) {
-	c, err := net.Dial("tcp", nextIp+":8989")
-	if err != nil {
-		return nil, err
-	}
-	defer c.Close()
-
+func TransferMessage(conn net.Conn, req []byte) []byte {
 	// sending the request to the next part of the path
-	c.Write(req)
+	conn.Write(req)
 	// from now we expect a response from the rest of the network
 
 	// reading data size
 	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
-	_, err = c.Read(dataSizeBuf)
+	_, err := conn.Read(dataSizeBuf)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	dataSize, _ := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
 	data := make([]byte, dataSize)
-	_, err = c.Read(data)
+	_, err = conn.Read(data)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	// appending the data size and data back together
-	return append(dataSizeBuf, data...), nil
+	return append(dataSizeBuf, data...)
+}
+
+/*
+	performs a key change with the client using a given RSA key
+
+*/
+func ExchangeKey(conn net.Conn) []byte {
+	lenBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
+	_, err := conn.Read(lenBuf)
+	if err != nil {
+		panic(err)
+	}
+
+	len, _ := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
+
+	pemKey := make([]byte, len)
+	_, err = conn.Read(pemKey)
+	if err != nil {
+		panic(err)
+	}
+
+	// inits a rsa object with the key we got from the client
+	// creating the aes key for the rest of comm
+	rsa := tor_rsa.NewRsaGivenPemPublicKey(pemKey)
+	aes := tor_aes.NewAesRandom()
+
+	conn.Write(rsa.Encrypt(aes.Key))
+	return aes.Key
 }
 
 /*
