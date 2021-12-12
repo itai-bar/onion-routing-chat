@@ -1,6 +1,6 @@
 import const
 
-def serialize_tor_message(message, route_ips):
+def serialize_tor_message(message, route_ips, close_socket):
     """ Function creates protocoled message
     data transfering message:
         1  Byte     (message-code)
@@ -19,7 +19,11 @@ def serialize_tor_message(message, route_ips):
     """
 
     message += '\0'
-    result = const.CLOSE_SOCKET_FLAG + const.CLOSE_SOCKET_FLAG.join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
+    result  = ''
+    if route_ips:
+        flag    = const.CLOSE_SOCKET_FLAG if close_socket else const.KEEP_SOCKET_FLAG
+        result += flag + flag.join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
+
     result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
     result += message
     return result

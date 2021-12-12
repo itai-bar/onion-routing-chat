@@ -43,14 +43,14 @@ func (a *Aes) Encrypt(data []byte) ([]byte, error) {
 	plaintext := []byte(data) // gotta work with bytes
 	block, err := aes.NewCipher(a.Key)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	// need to use a random iv for security
 	cipherText := make([]byte, aes.BlockSize+len(plaintext))
 	iv := cipherText[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	stream := cipher.NewCFBEncrypter(block, iv)

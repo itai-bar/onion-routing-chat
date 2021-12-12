@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
-	"log"
+	"errors"
 )
 
 type Rsa struct {
@@ -19,26 +19,31 @@ type Rsa struct {
 
 	public_pem_key []byte: -----BEGIN PUBLIC KEY-----key-----BEGIN PUBLIC KEY-----
 */
-func NewRsaGivenPemPublicKey(public_pem_key []byte) *Rsa {
-	r := &Rsa{BytesToPublicKey(public_pem_key)}
-	return r
+func NewRsaGivenPemPublicKey(public_pem_key []byte) (*Rsa, error) {
+	pk, err := BytesToPublicKey(public_pem_key)
+	if err != nil {
+		return nil, err
+	}
+
+	r := &Rsa{pk}
+	return r, nil
 }
 
-func BytesToPublicKey(pub []byte) *rsa.PublicKey {
+func BytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
 	block, _ := pem.Decode(pub)
 	b := block.Bytes
 
 	ifc, err := x509.ParsePKIXPublicKey(b)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
 	key, ok := ifc.(*rsa.PublicKey)
 	if !ok {
-		log.Println("not ok")
+		return nil, errors.New("ifc not ok")
 	}
 
-	return key
+	return key, nil
 }
 
 /*
@@ -46,12 +51,12 @@ func BytesToPublicKey(pub []byte) *rsa.PublicKey {
 
 	data byte[]: data to encrypt
 */
-func (r *Rsa) Encrypt(data []byte) []byte {
+func (r *Rsa) Encrypt(data []byte) ([]byte, error) {
 	rng := rand.Reader
 	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rng, r.PublicKey, data, []byte{})
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 
-	return ciphertext
+	return ciphertext, nil
 }
