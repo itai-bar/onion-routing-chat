@@ -15,14 +15,14 @@ def key_exchange(ip_path, sock_with_first_node : socket.socket):
 
         # encrypted_message = crypto.encrypt_by_order(message, aes_keys)
         encrypted_message = message
-        print("sending:", encrypted_message)
-        print("encrypted_message type:", type(encrypted_message))
+        print(f"sending: {encrypted_message}")
+        print(f"encrypted_message type: {type(encrypted_message)}")
         sock_with_first_node.sendall(encrypted_message.encode())
 
         response = sock_with_first_node.recv(const.DATA_MAX_LENGTH)
         # response = crypto.decrypt_by_order(response, aes_keys)
-        print("response from", idx, str(response))
+        print(f"response from {idx}: {str(response)}")
         aes_keys.append(crypto.Aes(rsa_obj.decrypt(response)))  # appending to aes_keys the aes key of curr iteration node
-        print("got the key:", aes_keys[-1])
+        print(f"got the key: {aes_keys[-1]}")
 
     return aes_keys

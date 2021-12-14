@@ -58,22 +58,24 @@ func HandleClient(conn net.Conn) {
 			log.Println("ERROR: ", err)
 			return
 		}
+		log.Printf("headers here:\nclose: %d\nnext: %s\nrest: %s\n",
+			headers.closeSocket, headers.nextIp, headers.rest)
+
 		nextNodeConn, err := net.Dial("tcp", headers.nextIp+":8989")
 		if err != nil {
 			log.Println("ERROR: ", err)
 			return
 		}
 
-		buf, err := TransferMessage(nextNodeConn, headers.rest)
+		resp, err := TransferMessage(nextNodeConn, headers.rest)
 		if err != nil {
 			log.Println("ERROR: ", err)
 			return
 		}
-		conn.Write(buf)
+		conn.Write(resp)
 
 		if headers.closeSocket == 1 {
 			conn.Close()
-			nextNodeConn.Close()
 			break
 		}
 	}
@@ -112,14 +114,12 @@ func GetTorHeaders(clientConn net.Conn) (*TorHeaders, error) {
 	}
 
 	nextIp := string(RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
-	log.Println("next ip:" + nextIp)
 	// reading the rest of the message
 	bufReader := bufio.NewReader(clientConn)
 	rest, err := bufReader.ReadBytes(0)
 	if err != nil {
 		return nil, err
 	}
-	log.Println("rest:" + string(rest))
 	return &TorHeaders{closeSocket, nextIp, rest}, nil
 }
 
@@ -158,7 +158,6 @@ func TransferMessage(conn net.Conn, req []byte) ([]byte, error) {
 
 /*
 	performs a key change with the client using a given RSA key
-
 */
 func ExchangeKey(conn net.Conn) ([]byte, error) {
 	lenBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
@@ -166,16 +165,14 @@ func ExchangeKey(conn net.Conn) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println(lenBuf)
 
 	leng, _ := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
-	log.Println(leng)
 	pemKey := make([]byte, leng)
 	_, err = conn.Read(pemKey)
 	if err != nil {
 		return nil, err
 	}
-	log.Println(pemKey)
+
 	pemKey = pemKey[0 : len(pemKey)-1]
 
 	// inits a rsa object with the key we got from the client
