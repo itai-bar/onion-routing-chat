@@ -100,7 +100,7 @@ def encrypt_by_order(message, aes_keys_for_encryption):
 
 def decrypt_by_order(ciphertext, aes_keys_for_decryption):
     decrypted = ciphertext  # first time initialization
-    for key in reversed(aes_keys_for_decryption):  # reversed because the order of encryption is AES1->AES2->AES3(->RSA)
+    for key in aes_keys_for_decryption:
         if isinstance(key, Aes):
             decrypted = key.decrypt(decrypted)
     return decrypted

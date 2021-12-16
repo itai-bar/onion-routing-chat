@@ -53,7 +53,7 @@ func HandleClient(conn net.Conn) {
 
 	// first we do a key exchange with the client
 	// TODO: use the aes key for comm
-	_, err := ExchangeKey(conn)
+	aes_key, err := ExchangeKey(conn)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
@@ -79,11 +79,12 @@ func HandleClient(conn net.Conn) {
 			socketOpenFlag = true
 		}
 
-		resp, err := TransferMessage(nextNodeConn, headers.rest)
+		resp, err := TransferMessage(nextNodeConn, headers.rest, aes_key)
 		if err != nil {
 			log.Println("ERROR: ", err)
 			return
 		}
+		log.Println("sending back:" + string(resp))
 		conn.Write(resp)
 
 		if headers.closeSocket == 1 {
@@ -146,7 +147,7 @@ func GetTorHeaders(clientConn net.Conn) (*TorHeaders, error) {
 	conn net.Conn: connection with next node or final dst
 	req []byte: the req to send forward
 */
-func TransferMessage(conn net.Conn, req []byte) ([]byte, error) {
+func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, error) {
 	// sending the request to the next part of the path
 	conn.Write(req)
 	log.Printf("transfered:\t%s", string(req))
@@ -158,6 +159,7 @@ func TransferMessage(conn net.Conn, req []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("recieved back size of:" + string(dataSizeBuf))
 
 	dataSize, _ := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
 	data := make([]byte, dataSize)
@@ -165,15 +167,22 @@ func TransferMessage(conn net.Conn, req []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("data recieved back:" + string(data))
 
+	encryptedData, err := aes_key.Encrypt(data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := fmt.Sprintf("%05d", len(encryptedData)) + string(encryptedData)
 	// appending the data size and data back together
-	return append(dataSizeBuf, data...), nil
+	return []byte(resp), nil
 }
 
 /*
 	performs a key change with the client using a given RSA key
 */
-func ExchangeKey(conn net.Conn) ([]byte, error) {
+func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	lenBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
 	_, err := conn.Read(lenBuf)
 	if err != nil {
@@ -210,7 +219,7 @@ func ExchangeKey(conn net.Conn) ([]byte, error) {
 	conn.Write(buf)
 	log.Println("sent rsa encrypted aes")
 
-	return aes.Key, nil
+	return aes, nil
 }
 
 /*

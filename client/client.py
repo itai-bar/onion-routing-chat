@@ -12,7 +12,7 @@ def main():
     while message != "Exit":
         message = input("enter message: ")
         resp = tor_message(message, route_ips, rsa_key_pair)
-        print(resp)
+        print(resp.decode())
 
 def tor_message(msg, route, rsa_key_pair):
     """sends a message using the tor protocol
@@ -24,14 +24,15 @@ def tor_message(msg, route, rsa_key_pair):
         resp (str)
     """
     sock_with_server = connect_to_server(route[const.ST_NODE_IP_IDX], 8989)
-    ke.key_exchange(route[:-1], sock_with_server, rsa_key_pair)
-    
+    aes_keys = ke.key_exchange(route[:-1], sock_with_server, rsa_key_pair)
     tor_msg = serialize.serialize_tor_message(msg, route[1:], True)
 
     sock_with_server.sendall(tor_msg.encode())
-    size = int(sock_with_server.recv(const.MESSAGE_SIZE_LEN).decode())
-    resp = sock_with_server.recv(size).decode()
- 
+    size = int(sock_with_server.recv(const.MESSAGE_SIZE_LEN).decode()) # reading plaintext size
+    resp = sock_with_server.recv(size)
+    
+    resp = crypto.decrypt_by_order(resp, aes_keys)
+
     sock_with_server.close()
     return resp
 

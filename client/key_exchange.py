@@ -17,8 +17,9 @@ def key_exchange(ip_path, sock_with_first_node : socket.socket, rsa_obj):
 
         # reading data len
         size = int(sock_with_first_node.recv(const.MESSAGE_SIZE_LEN).decode())
+
         response = sock_with_first_node.recv(size)
-        # response = crypto.decrypt_by_order(response, aes_keys)
+        response = crypto.decrypt_by_order(response, aes_keys)
         aes_keys.append(crypto.Aes(rsa_obj.decrypt(response)))  # appending to aes_keys the aes key of curr iteration node
 
     return aes_keys
