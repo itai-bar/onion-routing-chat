@@ -2,6 +2,7 @@ package node
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -47,8 +48,15 @@ func RunNode(address string) {
 }
 
 func HandleClient(conn net.Conn) {
+	var nextNodeConn net.Conn
+	socketOpenFlag := false
+
 	// first we do a key exchange with the client
-	ExchangeKey(conn)
+	// TODO: use the aes key for comm
+	_, err := ExchangeKey(conn)
+	if err != nil {
+		log.Println("ERROR: ", err)
+	}
 
 	// the transfering loop will end once
 	// the client will turn the CLOSE_SOCKET flag on
@@ -61,10 +69,14 @@ func HandleClient(conn net.Conn) {
 		log.Printf("headers here:\nclose: %d\nnext: %s\nrest: %s\n",
 			headers.closeSocket, headers.nextIp, headers.rest)
 
-		nextNodeConn, err := net.Dial("tcp", headers.nextIp+":8989")
-		if err != nil {
-			log.Println("ERROR: ", err)
-			return
+		// avoiding opening the socket in a loop
+		if !socketOpenFlag {
+			nextNodeConn, err = net.Dial("tcp", headers.nextIp+":8989")
+			if err != nil {
+				log.Println("ERROR: ", err)
+				return
+			}
+			socketOpenFlag = true
 		}
 
 		resp, err := TransferMessage(nextNodeConn, headers.rest)
@@ -76,6 +88,7 @@ func HandleClient(conn net.Conn) {
 
 		if headers.closeSocket == 1 {
 			conn.Close()
+			nextNodeConn.Close()
 			break
 		}
 	}
@@ -136,6 +149,7 @@ func GetTorHeaders(clientConn net.Conn) (*TorHeaders, error) {
 func TransferMessage(conn net.Conn, req []byte) ([]byte, error) {
 	// sending the request to the next part of the path
 	conn.Write(req)
+	log.Printf("transfered:\t%s", string(req))
 	// from now we expect a response from the rest of the network
 
 	// reading data size
@@ -166,14 +180,15 @@ func ExchangeKey(conn net.Conn) ([]byte, error) {
 		return nil, err
 	}
 
-	leng, _ := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
-	pemKey := make([]byte, leng)
+	length, _ := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
+	pemKey := make([]byte, length)
 	_, err = conn.Read(pemKey)
 	if err != nil {
 		return nil, err
 	}
 
 	pemKey = pemKey[0 : len(pemKey)-1]
+	log.Printf("got pem key:\t%s", string(pemKey))
 
 	// inits a rsa object with the key we got from the client
 	// creating the aes key for the rest of comm
@@ -188,7 +203,13 @@ func ExchangeKey(conn net.Conn) ([]byte, error) {
 		return nil, err
 	}
 
+	// padding the length with to 5 chars
+	paddedLen := fmt.Sprintf("%05d", len(buf))
+	buf = append([]byte(paddedLen), buf...)
+
 	conn.Write(buf)
+	log.Println("sent rsa encrypted aes")
+
 	return aes.Key, nil
 }
 

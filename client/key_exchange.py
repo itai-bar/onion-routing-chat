@@ -3,7 +3,6 @@ import socket
 import const
 from serialize import serialize_tor_message
 
-
 def key_exchange(ip_path, sock_with_first_node : socket.socket):
     rsa_obj = crypto.Rsa()  # creating Rsa class with random keypair
     aes_keys = []  # list of aes.Aes keys
@@ -15,14 +14,12 @@ def key_exchange(ip_path, sock_with_first_node : socket.socket):
 
         # encrypted_message = crypto.encrypt_by_order(message, aes_keys)
         encrypted_message = message
-        print(f"sending: {encrypted_message}")
-        print(f"encrypted_message type: {type(encrypted_message)}")
         sock_with_first_node.sendall(encrypted_message.encode())
 
-        response = sock_with_first_node.recv(const.DATA_MAX_LENGTH)
+        # reading data len
+        size = int(sock_with_first_node.recv(const.MESSAGE_SIZE_LEN).decode())
+        response = sock_with_first_node.recv(size)
         # response = crypto.decrypt_by_order(response, aes_keys)
-        print(f"response from {idx}: {str(response)}")
         aes_keys.append(crypto.Aes(rsa_obj.decrypt(response)))  # appending to aes_keys the aes key of curr iteration node
-        print(f"got the key: {aes_keys[-1]}")
 
     return aes_keys
