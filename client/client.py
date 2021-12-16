@@ -3,17 +3,18 @@ import sys
 import key_exchange as ke
 import const
 import serialize
+import crypto
 
 def main():
     message = ""
     route_ips = get_nodes_and_dst_ips()  # [1st node, 2nd node, 3rd node, dst_ip]
-
+    rsa_key_pair = crypto.Rsa()  # creating Rsa class with random keypair for all sessions
     while message != "Exit":
         message = input("enter message: ")
-        resp = tor_message(message, route_ips)
+        resp = tor_message(message, route_ips, rsa_key_pair)
         print(resp)
 
-def tor_message(msg, route):
+def tor_message(msg, route, rsa_key_pair):
     """sends a message using the tor protocol
 
     Args:
@@ -23,7 +24,7 @@ def tor_message(msg, route):
         resp (str)
     """
     sock_with_server = connect_to_server(route[const.ST_NODE_IP_IDX], 8989)
-    ke.key_exchange(route[:-1], sock_with_server)
+    ke.key_exchange(route[:-1], sock_with_server, rsa_key_pair)
     
     tor_msg = serialize.serialize_tor_message(msg, route[1:], True)
 

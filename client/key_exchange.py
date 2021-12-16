@@ -3,8 +3,7 @@ import socket
 import const
 from serialize import serialize_tor_message
 
-def key_exchange(ip_path, sock_with_first_node : socket.socket):
-    rsa_obj = crypto.Rsa()  # creating Rsa class with random keypair
+def key_exchange(ip_path, sock_with_first_node : socket.socket, rsa_obj):
     aes_keys = []  # list of aes.Aes keys
     for idx, ip in enumerate(ip_path): # entering this after exchanged keys with first node
         if idx > const.ST_NODE_IP_IDX:
