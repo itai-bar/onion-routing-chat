@@ -6,14 +6,14 @@ from Crypto.Hash import SHA256
 import const
 
 class Aes:
-    def __init__(self, key=None, key_size=32):
+    def __init__(self, key : bytes=None, key_size : int=32):
         if key == None:
             self._key = Random.get_random_bytes(key_size)
         else:
             self._key = key
     
     def encrypt(self, text: bytes) -> bytes:
-        """encrypts a given text using aes in CFB mode
+        """Encrypts a given text using aes in CFB mode
 
         Args:
             text (bytes): aes encrypted text
@@ -22,7 +22,7 @@ class Aes:
             bytes: encrypted text
         """
         rem = len(text) % 16
-        padded = str.encode(text) + (b'\0' * (16 - rem)) if rem > 0 else str.encode(text)
+        padded = text + (b'\0' * (16 - rem)) if rem > 0 else text
 
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self._key, AES.MODE_CFB, iv, segment_size=128)
@@ -31,7 +31,7 @@ class Aes:
     
 
     def decrypt(self, text: bytes) -> bytes:
-        """decrypts a message using aes in CFB mode
+        """Decrypts a message using aes in CFB mode
 
         Args:
             text (bytes): an encrypted message
@@ -48,7 +48,7 @@ class Aes:
 
 
 class Rsa():
-    def __init__(self, given_pem_public_key=None, given_pem_private_key=None):
+    def __init__(self, given_pem_public_key : bytes=None, given_pem_private_key : bytes=None):
         """C'tor that generates RSA key in case that one of the arguments is None
         and creates RSA key in case that given public and private pems of keys
 
@@ -67,8 +67,8 @@ class Rsa():
             self.public_key = RSA.import_key(given_pem_public_key)
             self._key_pair = RSA.import_key(given_pem_private_key)
 
-    def encrypt(self, plaintext):
-        """function encrypts plaintext with initalized public key(self.public_key)
+    def encrypt(self, plaintext : bytes) -> bytes:
+        """Function encrypts plaintext with initalized public key(self.public_key)
 
         Args:
             plaintext (bytes): text to be encrypted
@@ -78,8 +78,8 @@ class Rsa():
         """
         return PKCS1_OAEP.new(self.public_key, SHA256.new()).encrypt(plaintext)
         
-    def decrypt(self, ciphertext):
-        """function decrypts ciphertext with initalized private key(self._key_pair)
+    def decrypt(self, ciphertext : bytes) -> bytes:
+        """Function decrypts ciphertext with initalized private key(self._key_pair)
 
         Args:
             ciphertext (bytes): cipher to be decrypted
@@ -90,15 +90,16 @@ class Rsa():
         return PKCS1_OAEP.new(self._key_pair, SHA256.new()).decrypt(ciphertext)
 
 
-def encrypt_by_order(message, aes_keys_for_encryption):
-    encrypted = message  # first time initialization
-    for key in reversed(aes_keys_for_encryption):  # reversed because we want each node will decrypt in his order and the first node should be the last encryption
-        if isinstance(key, Aes):
-            encrypted = key.encrypt(encrypted)
-    return encrypted
+def decrypt_by_order(ciphertext : bytes, aes_keys_for_decryption : list) -> bytes:
+    """Function decrypted ciphertext by order of given list of aes-keys
 
+    Args:
+        ciphertext (bytes): encrypted text
+        aes_keys_for_decryption (list): keys for decryption(ordered)
 
-def decrypt_by_order(ciphertext, aes_keys_for_decryption):
+    Returns:
+        bytes: decrypted ciphertext as plaintext
+    """
     decrypted = ciphertext  # first time initialization
     for key in aes_keys_for_decryption:
         if isinstance(key, Aes):

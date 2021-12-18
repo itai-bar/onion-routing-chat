@@ -1,7 +1,7 @@
 package node
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -52,16 +52,28 @@ func HandleClient(conn net.Conn) {
 	socketOpenFlag := false
 
 	// first we do a key exchange with the client
-	// TODO: use the aes key for comm
 	aes_key, err := ExchangeKey(conn)
 	if err != nil {
 		log.Println("ERROR: ", err)
 	}
 
+
 	// the transfering loop will end once
 	// the client will turn the CLOSE_SOCKET flag on
 	for {
-		headers, err := GetTorHeaders(conn)
+		allData, err := GetAllDataFromSocket(conn)
+		if err != nil {
+			log.Println("ERROR: ", err)
+			return
+		}
+
+		allData, err = aes_key.Decrypt(allData)
+		if err != nil {
+			log.Println("ERROR: ", err)
+			return
+		}
+
+		headers, err := GetTorHeaders(allData)
 		if err != nil {
 			log.Println("ERROR: ", err)
 			return
@@ -84,7 +96,6 @@ func HandleClient(conn net.Conn) {
 			log.Println("ERROR: ", err)
 			return
 		}
-		log.Println("sending back:" + string(resp))
 		conn.Write(resp)
 
 		if headers.closeSocket == 1 {
@@ -93,6 +104,30 @@ func HandleClient(conn net.Conn) {
 			break
 		}
 	}
+}
+
+/*
+	function get all read all data from socket by first 5 bytes that are the size of the rest of th content
+*/
+func GetAllDataFromSocket(conn net.Conn) ([]byte, error) {
+	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
+	_, err := conn.Read(dataSizeBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	dataSize, err := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
+	if err != nil {
+		return nil, err
+	}
+
+	allData := make([]byte, dataSize)
+	conn.Read(allData)
+	if err != nil {
+		return nil, err
+	}
+
+	return allData, nil
 }
 
 /*
@@ -112,28 +147,33 @@ func HandleClient(conn net.Conn) {
 
 	conn net.Conn: connection with a client
 */
-func GetTorHeaders(clientConn net.Conn) (*TorHeaders, error) {
+func GetTorHeaders(allData []byte) (*TorHeaders, error) {
+	allDataReader := bytes.NewReader(allData)
+
 	closeSocketBuf := make([]byte, CLOSE_SOCKET_SIZE)
-	_, err := clientConn.Read(closeSocketBuf)
+
+	_, err := allDataReader.Read(closeSocketBuf)
 	if err != nil {
 		return nil, err
 	}
+
 	closeSocket, _ := strconv.Atoi(string(closeSocketBuf))
 
 	// reading the next node/dst ip
 	nextIpBuf := make([]byte, IP_SEGMENT_SIZE)
-	_, err = clientConn.Read(nextIpBuf)
+	_, err = allDataReader.Read(nextIpBuf)
 	if err != nil {
 		return nil, err
 	}
 
 	nextIp := string(RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
-	// reading the rest of the message
-	bufReader := bufio.NewReader(clientConn)
-	rest, err := bufReader.ReadBytes(0)
+
+	rest := make([]byte, allDataReader.Len())
+	_, err = allDataReader.Read(rest)
 	if err != nil {
 		return nil, err
 	}
+
 	return &TorHeaders{closeSocket, nextIp, rest}, nil
 }
 
@@ -148,9 +188,12 @@ func GetTorHeaders(clientConn net.Conn) (*TorHeaders, error) {
 	req []byte: the req to send forward
 */
 func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, error) {
+	//adding the size of the rest of the request
+	paddedLen := fmt.Sprintf("%05d", len(req))
+	req = append([]byte(paddedLen), req...)
+
 	// sending the request to the next part of the path
 	conn.Write(req)
-	log.Printf("transfered:\t%s", string(req))
 	// from now we expect a response from the rest of the network
 
 	// reading data size
@@ -159,7 +202,6 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	log.Println("recieved back size of:" + string(dataSizeBuf))
 
 	dataSize, _ := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
 	data := make([]byte, dataSize)
@@ -167,16 +209,17 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	log.Println("data recieved back:" + string(data))
 
 	encryptedData, err := aes_key.Encrypt(data)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := fmt.Sprintf("%05d", len(encryptedData)) + string(encryptedData)
 	// appending the data size and data back together
-	return []byte(resp), nil
+	paddedLen = fmt.Sprintf("%05d", len(encryptedData))
+	resp := append([]byte(paddedLen), encryptedData...)
+	
+	return resp, nil
 }
 
 /*
@@ -196,9 +239,6 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 		return nil, err
 	}
 
-	pemKey = pemKey[0 : len(pemKey)-1]
-	log.Printf("got pem key:\t%s", string(pemKey))
-
 	// inits a rsa object with the key we got from the client
 	// creating the aes key for the rest of comm
 	rsa, err := tor_rsa.NewRsaGivenPemPublicKey(pemKey)
@@ -217,7 +257,6 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	buf = append([]byte(paddedLen), buf...)
 
 	conn.Write(buf)
-	log.Println("sent rsa encrypted aes")
 
 	return aes, nil
 }

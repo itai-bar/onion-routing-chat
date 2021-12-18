@@ -14,8 +14,8 @@ def main():
         resp = tor_message(message, route_ips, rsa_key_pair)
         print(resp.decode())
 
-def tor_message(msg, route, rsa_key_pair):
-    """sends a message using the tor protocol
+def tor_message(msg : str, route : list, rsa_key_pair : crypto.Rsa) -> bytes:
+    """Sends a message using the tor protocol
 
     Args:
         msg (str): message for the final server
@@ -24,10 +24,13 @@ def tor_message(msg, route, rsa_key_pair):
         resp (str)
     """
     sock_with_server = connect_to_server(route[const.ST_NODE_IP_IDX], 8989)
+    
     aes_keys = ke.key_exchange(route[:-1], sock_with_server, rsa_key_pair)
-    tor_msg = serialize.serialize_tor_message(msg, route[1:], True)
 
-    sock_with_server.sendall(tor_msg.encode())
+    tor_msg = serialize.serialize_tor_message(msg, route[1:], True, aes_keys)
+
+    sock_with_server.sendall(tor_msg)
+
     size = int(sock_with_server.recv(const.MESSAGE_SIZE_LEN).decode()) # reading plaintext size
     resp = sock_with_server.recv(size)
     
@@ -36,7 +39,7 @@ def tor_message(msg, route, rsa_key_pair):
     sock_with_server.close()
     return resp
 
-def connect_to_server(ip, port):
+def connect_to_server(ip : str, port : int) -> socket.socket:
     """The function creates TCP socket, create connection with given 'ip' and 'port' and returns the connected socket
 
     Args:
@@ -54,7 +57,7 @@ def connect_to_server(ip, port):
     sock.connect(server_address)
     return sock
 
-def get_nodes_and_dst_ips():
+def get_nodes_and_dst_ips() -> list:
     """Get nodes ip's from argv
 
     Returns:

@@ -1,46 +1,48 @@
+from os import curdir
 import const
+import crypto
 
-def serialize_tor_message(message, route_ips, close_socket) -> str:
+def serialize_tor_message(message : str, route_ips : list, close_socket : bool, aes_keys : list) -> bytes:
     """ Function creates protocoled message
     data transfering message:
-        1  Byte     (message-code)
-        15 Bytes    (padded 2nd node ip)
-        15 Bytes    (padded 3rd node ip)
-        15 Bytes    (padded dst ip)
-        2 Bytes     (padded data size[max is 65535])
-        data size   (data)
+        5  Bytes    (rest data-size)    not encrypted
+        1  Byte     (close_socket)      encrypted by node1
+        15 Bytes    (padded 2nd node ip)encrypted by node1
+        1  Byte     (close_socket)      encrypted by node2,node1
+        15 Bytes    (padded 3rd node ip)encrypted by node2,node1
+        1  Bytes    (close_socket)      encrypted by node3,node2,node1
+        15 Bytes    (padded dst ip)     encrypted by node3,node2,node1
+        data size   (data)              encrypted by node3,node2,node1
 
     Args:
         message (string): message to send
-        nodes_ips (list(string)): ip's of 2nd node, 3rd node and destination ip.
+        nodes_ips (list(string)): ip's of 2nd node, 3rd node and destination ip. depending on part of communication
 
     Returns:
-        string: message suited to protocol
+        bytes: encrypted message suited to protocol
     """
+    result = message.encode()
+    flag   = (const.CLOSE_SOCKET_FLAG if close_socket else const.KEEP_SOCKET_FLAG).encode()
+    
+    for iteration in range(len(aes_keys)):  # encrypting by layers
+        result = flag + pad_ip(route_ips[len(route_ips)-iteration-1]).encode() + result
 
-    message += '\0'
-    result  = ''
-    if route_ips:
-        flag    = const.CLOSE_SOCKET_FLAG if close_socket else const.KEEP_SOCKET_FLAG
-        result += flag + flag.join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
-
-    result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
-    result += message
+        curr_layer_key = aes_keys[-1-iteration]
+        if isinstance(curr_layer_key, crypto.Aes):
+            result = curr_layer_key.encrypt(result)
+    
+    result = str(len(result)).zfill(5).encode() + result
     return result
 
-def pad_ips(list_of_ips):
-    """This function get list of ip's not padded, for example 1.2.3.4 and return each ip padded 00000001.2.3.4
+
+def pad_ip(ip : str) -> str:
+    """This function get not padded ip, for example 1.2.3.4 and return ip padded 00000001.2.3.4
 
     Args:
-        list_of_ips (list): Ip's to pad, fill with leading zeros to len 15
+        ip (str): Ip to pad, fill with leading zeros to len 15
 
     Returns:
-        list: Padded ip's as list
+        str: Padded ip
     """
 
-    padded_ips = []
-    
-    for ip in list_of_ips:
-        padded_ips.append(ip.zfill(15))
-
-    return padded_ips
+    return ip.zfill(15)
