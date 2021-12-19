@@ -9,6 +9,7 @@ def main():
     message = ""
     route_ips = get_nodes_and_dst_ips()  # [1st node, 2nd node, 3rd node, dst_ip]
     rsa_key_pair = crypto.Rsa()  # creating Rsa class with random keypair for all sessions
+
     while message != "Exit":
         message = input("enter message: ")
         resp = tor_message(message, route_ips, rsa_key_pair)
@@ -28,6 +29,7 @@ def tor_message(msg : str, route : list, rsa_key_pair : crypto.Rsa) -> bytes:
     aes_keys = ke.key_exchange(route[:-1], sock_with_server, rsa_key_pair)
 
     tor_msg = serialize.serialize_tor_message(msg, route[1:], True, aes_keys)
+    print(tor_msg)
 
     sock_with_server.sendall(tor_msg)
 

@@ -25,7 +25,8 @@ def serialize_tor_message(message : str, route_ips : list, close_socket : bool, 
     flag   = (const.CLOSE_SOCKET_FLAG if close_socket else const.KEEP_SOCKET_FLAG).encode()
     
     for iteration in range(len(aes_keys)):  # encrypting by layers
-        result = flag + pad_ip(route_ips[len(route_ips)-iteration-1]).encode() + result
+        # filling with zeros for consistent size
+        result = flag + (route_ips[len(route_ips)-iteration-1]).zfill(15).encode() + result
 
         curr_layer_key = aes_keys[-1-iteration]
         if isinstance(curr_layer_key, crypto.Aes):
@@ -33,16 +34,3 @@ def serialize_tor_message(message : str, route_ips : list, close_socket : bool, 
     
     result = str(len(result)).zfill(5).encode() + result
     return result
-
-
-def pad_ip(ip : str) -> str:
-    """This function get not padded ip, for example 1.2.3.4 and return ip padded 00000001.2.3.4
-
-    Args:
-        ip (str): Ip to pad, fill with leading zeros to len 15
-
-    Returns:
-        str: Padded ip
-    """
-
-    return ip.zfill(15)

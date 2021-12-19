@@ -57,7 +57,6 @@ func HandleClient(conn net.Conn) {
 		log.Println("ERROR: ", err)
 	}
 
-
 	// the transfering loop will end once
 	// the client will turn the CLOSE_SOCKET flag on
 	for {
@@ -78,8 +77,6 @@ func HandleClient(conn net.Conn) {
 			log.Println("ERROR: ", err)
 			return
 		}
-		log.Printf("headers here:\nclose: %d\nnext: %s\nrest: %s\n",
-			headers.closeSocket, headers.nextIp, headers.rest)
 
 		// avoiding opening the socket in a loop
 		if !socketOpenFlag {
@@ -97,6 +94,7 @@ func HandleClient(conn net.Conn) {
 			return
 		}
 		conn.Write(resp)
+		log.Println("sent response back")
 
 		if headers.closeSocket == 1 {
 			conn.Close()
@@ -194,6 +192,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 
 	// sending the request to the next part of the path
 	conn.Write(req)
+	log.Println("forwarded the rest of the message")
 	// from now we expect a response from the rest of the network
 
 	// reading data size
@@ -218,7 +217,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 	// appending the data size and data back together
 	paddedLen = fmt.Sprintf("%05d", len(encryptedData))
 	resp := append([]byte(paddedLen), encryptedData...)
-	
+
 	return resp, nil
 }
 
@@ -247,6 +246,8 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 		return nil, err
 	}
 
+	log.Println("got rsa key from client")
+
 	buf, err := rsa.Encrypt(aes.Key)
 	if err != nil {
 		return nil, err
@@ -258,6 +259,7 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 
 	conn.Write(buf)
 
+	log.Println("sent rsa encrypted aes key")
 	return aes, nil
 }
 
