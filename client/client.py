@@ -1,68 +1,47 @@
 import socket
 import sys
-
-ST_NODE_IP_IDX = 0
-ND_NODE_IP_IDX = 1
-RD_NODE_IP_IDX = 2
-DST_IP_IDX = 3
+import key_exchange as ke
+import const
+import serialize
+import crypto
 
 def main():
     message = ""
     route_ips = get_nodes_and_dst_ips()  # [1st node, 2nd node, 3rd node, dst_ip]
-    sock_with_server = connect_to_server(route_ips[ST_NODE_IP_IDX], 8989)
-    
+    rsa_key_pair = crypto.Rsa()  # creating Rsa class with random keypair for all sessions
+
     while message != "Exit":
-        message = input("Enter message('Exit' to exit):")
-        message_to_send = serialize_tor_message(message, route_ips[ND_NODE_IP_IDX:])
-        print(message_to_send)
-        print("response:", send_message_and_get_response(sock_with_server, message_to_send).decode())
-        
+        message = input("enter message: ")
+        resp = tor_message(message, route_ips, rsa_key_pair)
+        print(resp.decode())
+
+def tor_message(msg : str, route : list, rsa_key_pair : crypto.Rsa) -> bytes:
+    """Sends a message using the tor protocol
+
+    Args:
+        msg (str): message for the final server
+        route (list[str]): list of tor node ips
+    Returns:
+        resp (str)
+    """
+    sock_with_server = connect_to_server(route[const.ST_NODE_IP_IDX], 8989)
+    
+    aes_keys = ke.key_exchange(route[:-1], sock_with_server, rsa_key_pair)
+
+    tor_msg = serialize.serialize_tor_message(msg, route[1:], True, aes_keys)
+    print(tor_msg)
+
+    sock_with_server.sendall(tor_msg)
+
+    size = int(sock_with_server.recv(const.MESSAGE_SIZE_LEN).decode()) # reading plaintext size
+    resp = sock_with_server.recv(size)
+    
+    resp = crypto.decrypt_by_order(resp, aes_keys)
+
     sock_with_server.close()
+    return resp
 
-
-def serialize_tor_message(message, route_ips):
-    """ Function creates protocoled message
-    data transfering message:
-        15 Bytes    (padded 2nd node ip)
-        15 Bytes    (padded 3rd node ip)
-        15 Bytes    (padded dst ip)
-        2 Bytes     (padded data size[max is 65535])
-        data size   (data)
-
-    Args:
-        message (string): message to send
-        nodes_ips (list(string)): ip's of 2nd node and 3rd node. all padded with pad_ips func
-        dst_ip (string): destination ip padded with pad_ips func
-
-    Returns:
-        string: message suited to protocol
-    """
-
-    message += '\0'
-    result = ""
-    result += "".join(pad_ips(route_ips)) # Each node remove exact amount of bytes because padding
-    result += str(len(message)).zfill(5)  # fill with zeros so the dst be able to read it with no problems
-    result += message
-    return result
-
-
-
-def send_message_and_get_response(sock_with_server, message_to_send):
-    """The function send message to the given socket and return the response
-
-    Args:
-        sock_with_server (socket): Socket to send it the message
-        message_to_send (string): Message to send to the server through the socket
-
-    Returns:
-        string.encode(): Response from the server
-    """
-
-    sock_with_server.sendall(message_to_send.encode())
-    return sock_with_server.recv(len(message_to_send))  # now we are dealing with echo server, going to be changed in the progress of the project
-
-
-def connect_to_server(ip, port):
+def connect_to_server(ip : str, port : int) -> socket.socket:
     """The function creates TCP socket, create connection with given 'ip' and 'port' and returns the connected socket
 
     Args:
@@ -78,10 +57,9 @@ def connect_to_server(ip, port):
     # Connect the socket to the server
     server_address = (ip, port)
     sock.connect(server_address)
-    print('connected to ', server_address)
     return sock
 
-def get_nodes_and_dst_ips():
+def get_nodes_and_dst_ips() -> list:
     """Get nodes ip's from argv
 
     Returns:
@@ -96,24 +74,6 @@ def get_nodes_and_dst_ips():
             print("Please enter 4 ip's as arguments: client.py node_ip1 node_ip2 node_ip3 ip_of_destination")
             exit(0)
     return nodes
-
-
-def pad_ips(list_of_ips):
-    """This function get list of ip's not padded, for example 1.2.3.4 and return each ip padded 00000001.2.3.4
-
-    Args:
-        list_of_ips (list): Ip's to pad, fill with leading zeros to len 15
-
-    Returns:
-        list: Padded ip's as list
-    """
-
-    padded_ips = []
-    
-    for ip in list_of_ips:
-        padded_ips.append(ip.zfill(15))
-
-    return padded_ips
 
 
 if __name__ == "__main__":
