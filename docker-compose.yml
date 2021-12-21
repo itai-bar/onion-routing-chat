@@ -7,6 +7,12 @@ services:
       dockerfile: ./cmd/chat_server/Dockerfile
     ports:
       - 8989:8989
+  router:
+    build:
+      context: .
+      dockerfile: ./cmd/router/Dockerfile
+    ports:
+      - 7777:7777
   node1:
     build:
       context: .
