@@ -231,7 +231,11 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 		return nil, err
 	}
 
-	length, _ := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
+	length, err := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
+	if err != nil {
+		return nil, err
+	}
+	
 	pemKey := make([]byte, length)
 	_, err = conn.Read(pemKey)
 	if err != nil {
