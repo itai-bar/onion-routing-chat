@@ -15,6 +15,7 @@ const (
 	IP_SEGMENT_SIZE        = 15
 	DATA_SIZE_SEGMENT_SIZE = 5
 	CODE_NODE_CONN = "00"
+	CODE_NODE_DIS  = "01"
 )
 
 type TorHeaders struct {
@@ -53,6 +54,25 @@ func NetworkLogon(routerAddress string) bool {
 
 
 	return res==0 //if res==0-> connection passed. else-> connection refused
+}
+
+/*
+	disconnect from tor-network
+
+	routerAddress string: "ip:port"
+*/
+func NetworkLogout(routerAddress string) {
+	routerConn, err := net.Dial("tcp", routerAddress)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return
+	}
+
+	routerConn.Write([]byte(CODE_NODE_DIS))
+
+	routerConn.Close()
+
+	log.Println("Logged out from tor-network")
 }
 
 /*
