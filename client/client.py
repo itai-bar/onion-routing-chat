@@ -12,6 +12,8 @@ def main():
 
     while message != "Exit":
         message = input("enter message: ")
+        if message == '':  # empty message is not allowed 
+            continue
         resp = tor_message(message, route_ips, rsa_key_pair)
         print(resp.decode())
 
