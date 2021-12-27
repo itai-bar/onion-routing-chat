@@ -1,5 +1,11 @@
 version: '3'
 
+networks:
+  mynetwork:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
 services:
   chat_server:
     build:
@@ -7,27 +13,46 @@ services:
       dockerfile: ./cmd/chat_server/Dockerfile
     ports:
       - 8989:8989
+    networks:
+      mynetwork: # under same subnet
+    depends_on:
+      - router
   router:
     build:
       context: .
       dockerfile: ./cmd/router/Dockerfile
     ports:
       - 7777:7777
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.2
   node1:
     build:
       context: .
       dockerfile: ./cmd/node/Dockerfile
     ports:
       - 8980:8989
+    networks:
+      mynetwork: # under same subnet
+    depends_on:
+      - router
   node2:
     build:
       context: .
       dockerfile: ./cmd/node/Dockerfile
     ports:
       - 8981:8989
+    networks:
+      mynetwork: # under same subnet
+    depends_on:
+      - router
   node3:
     build:
       context: .
       dockerfile: ./cmd/node/Dockerfile
     ports:
       - 8982:8989
+    networks:
+      mynetwork: # under same subnet
+    depends_on:
+      - router
