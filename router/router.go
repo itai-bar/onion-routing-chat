@@ -3,6 +3,7 @@ package router
 import (
 	"log"
 	"net"
+	"sync"
 )
 
 const (
@@ -11,6 +12,8 @@ const (
 	CODE_NODE_DIS  = "01"
 	CODE_ROUTE     = "11"
 )
+
+var networkLock sync.Mutex
 
 type TorNetwork map[string]struct{}
 
@@ -54,6 +57,10 @@ func HandleClient(conn net.Conn, network TorNetwork) {
 		log.Println("ERROR: ", err)
 		return
 	}
+
+	// the map is a mutual resource
+	networkLock.Lock()
+	defer networkLock.Unlock()
 
 	switch string(msgCode) {
 	case CODE_NODE_CONN:
