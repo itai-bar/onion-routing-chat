@@ -49,7 +49,6 @@ func NetworkLogout(routerAddress string) {
 	}
 
 	routerConn.Write([]byte(CODE_NODE_DIS))
-
 	routerConn.Close()
 
 	log.Println("Logged out from tor-network")

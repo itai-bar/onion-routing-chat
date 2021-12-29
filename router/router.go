@@ -12,6 +12,8 @@ const (
 	CODE_ROUTE     = "11"
 )
 
+type TorNetwork map[string]struct{}
+
 /*
 	runs the server on a given address
 	calls HandleClient for a connected client
@@ -26,6 +28,8 @@ func RunRouter(address string) {
 	defer listener.Close() // will close the listener when the function exits
 	log.Println("Listening on:\t", address)
 
+	network := make(TorNetwork)
+
 	for {
 		conn, err := listener.Accept() // new client
 		if err != nil {
@@ -33,7 +37,7 @@ func RunRouter(address string) {
 		}
 		log.Println("New client:\t", conn.RemoteAddr().String())
 
-		go HandleClient(conn) // new thread to handle the client
+		go HandleClient(conn, network) // new thread to handle the client
 	}
 }
 
@@ -43,7 +47,7 @@ func RunRouter(address string) {
 		* node disconnection
 		* tor client route request
 */
-func HandleClient(conn net.Conn) {
+func HandleClient(conn net.Conn, network TorNetwork) {
 	msgCode := make([]byte, REQ_CODE_SIZE)
 	_, err := conn.Read(msgCode)
 	if err != nil {
@@ -53,9 +57,9 @@ func HandleClient(conn net.Conn) {
 
 	switch string(msgCode) {
 	case CODE_NODE_CONN:
-		// TODO: node connection
+		network[conn.RemoteAddr().String()] = struct{}{} // init en empty struct to the map
 	case CODE_NODE_DIS:
-		// TODO: node disconnection
+		delete(network, conn.RemoteAddr().String())
 	case CODE_ROUTE:
 		// TODO: client route
 	default:
