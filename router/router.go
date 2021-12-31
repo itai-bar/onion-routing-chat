@@ -69,8 +69,10 @@ func HandleClient(conn net.Conn, network TorNetwork) {
 
 	switch string(msgCode) {
 	case CODE_NODE_CONN:
-		network[conn.RemoteAddr().String()] = struct{}{} // init en empty struct to the map
-		conn.Write([]byte("1")) // "1" for true - it means joined succesfully 
+		ip := conn.RemoteAddr().String()
+		ip = ip[:strings.IndexByte(ip, ':')] //slice till the port without it
+		network[ip] = struct{}{}             // init en empty struct to the map
+		conn.Write([]byte("1"))              // "1" for true - it means joined succesfully
 	case CODE_NODE_DIS:
 		delete(network, conn.RemoteAddr().String())
 	case CODE_ROUTE:
@@ -106,7 +108,6 @@ func SendRoute(conn net.Conn, network TorNetwork) {
 
 	conn.Write(buf)
 }
-
 
 // TODO: check if we are able to move this functions to be more generic instead of duplicate it in each code
 /*
