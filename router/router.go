@@ -1,16 +1,21 @@
 package router
 
 import (
+	"fmt"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
+	"torbasedchat/pkg/tor_rsa"
 )
 
 const (
-	REQ_CODE_SIZE  = 2
-	CODE_NODE_CONN = "00"
-	CODE_NODE_DIS  = "01"
-	CODE_ROUTE     = "11"
+	REQ_CODE_SIZE          = 2
+	CODE_NODE_CONN         = "00"
+	CODE_NODE_DIS          = "01"
+	CODE_ROUTE             = "11"
+	DATA_SIZE_SEGMENT_SIZE = 5
 )
 
 var networkLock sync.Mutex
@@ -68,10 +73,73 @@ func HandleClient(conn net.Conn, network TorNetwork) {
 	case CODE_NODE_DIS:
 		delete(network, conn.RemoteAddr().String())
 	case CODE_ROUTE:
-		// TODO: client route
+		SendRoute(conn, network)
 	default:
 		// TODO: send error msg to client
 		log.Println("invalid req code")
 		return
 	}
+}
+
+func SendRoute(conn net.Conn, network TorNetwork) {
+	listForChecks := []string{"IP1", "IP2", "IP3"} // TODO: change from IP1,IP2,IP3 to random ip's from network(function argument)
+	allData, err := GetAllDataFromSocket(conn)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return
+	}
+
+	rsa_key, err := tor_rsa.NewRsaGivenPemPublicKey(allData)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return
+	}
+
+	encrypted, err := rsa_key.Encrypt([]byte(strings.Join(listForChecks[:], "&")))
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return
+	}
+	paddedLen := fmt.Sprintf("%05d", len(encrypted))
+	buf := append([]byte(paddedLen), encrypted...)
+
+	conn.Write(buf)
+}
+
+
+// TODO: check if we are able to move this functions to be more generic instead of duplicate it in each code
+/*
+	function get all read all data from socket by first 5 bytes that are the size of the rest of th content
+*/
+func GetAllDataFromSocket(conn net.Conn) ([]byte, error) {
+	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
+	_, err := conn.Read(dataSizeBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	dataSize, err := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
+	if err != nil {
+		return nil, err
+	}
+
+	allData := make([]byte, dataSize)
+	conn.Read(allData)
+	if err != nil {
+		return nil, err
+	}
+
+	return allData, nil
+}
+
+/*
+	removes every char c from the start of byte array s
+*/
+func RemoveLeadingChars(s []byte, c byte) []byte {
+	for i := range s {
+		if s[i] != c {
+			return s[i:]
+		}
+	}
+	return []byte{}
 }
