@@ -3,10 +3,12 @@ package router
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 	"torbasedchat/pkg/tor_rsa"
 )
 
@@ -69,13 +71,19 @@ func HandleClient(conn net.Conn, network TorNetwork) {
 
 	switch string(msgCode) {
 	case CODE_NODE_CONN:
+		log.Println("got a node connection req")
+
 		ip := conn.RemoteAddr().String()
 		ip = ip[:strings.IndexByte(ip, ':')] //slice till the port without it
 		network[ip] = struct{}{}             // init en empty struct to the map
 		conn.Write([]byte("1"))              // "1" for true - it means joined succesfully
 	case CODE_NODE_DIS:
+		log.Println("got a node disconnection req")
+
 		delete(network, conn.RemoteAddr().String())
 	case CODE_ROUTE:
+		log.Println("got a client routing req")
+
 		SendRoute(conn, network)
 	default:
 		// TODO: send error msg to client
@@ -84,8 +92,44 @@ func HandleClient(conn net.Conn, network TorNetwork) {
 	}
 }
 
+/*
+	generates a random route for a client
+	this function has to be locked because its changes the network!
+*/
+func GenerateRoute(network TorNetwork) []string {
+	tmpMap := make(TorNetwork)
+	var ips []string
+
+	for i := 0; i < 3; i++ {
+		k, v := RandMapItem(network)
+		tmpMap[k] = v        // saving for later
+		ips = append(ips, k) // appending the new ip
+		delete(network, k)   // deleting the key from the original map (would be restored)
+	}
+
+	for k, v := range tmpMap {
+		network[k] = v // restoring the keys
+	}
+
+	return ips
+}
+
+// returns a random item from a tor network map
+func RandMapItem(network TorNetwork) (k string, v struct{}) {
+	rand.Seed(time.Now().UnixNano()) // initing seed
+	i := rand.Intn(len(network))
+
+	for k := range network {
+		if i == 0 {
+			return k, network[k]
+		}
+		i--
+	}
+	panic("would never happen")
+}
+
 func SendRoute(conn net.Conn, network TorNetwork) {
-	listForChecks := []string{"IP1", "IP2", "IP3"} // TODO: change from IP1,IP2,IP3 to random ip's from network(function argument)
+	route := GenerateRoute(network)
 	allData, err := GetAllDataFromSocket(conn)
 	if err != nil {
 		log.Println("ERROR: ", err)
@@ -98,7 +142,7 @@ func SendRoute(conn net.Conn, network TorNetwork) {
 		return
 	}
 
-	encrypted, err := rsa_key.Encrypt([]byte(strings.Join(listForChecks[:], "&")))
+	encrypted, err := rsa_key.Encrypt([]byte(strings.Join(route[:], "&")))
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return

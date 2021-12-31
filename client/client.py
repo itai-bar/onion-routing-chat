@@ -14,12 +14,12 @@ def main():
     route_ips = get_nodes_and_dst_ips(rsa_key_pair)  # [1st node, 2nd node, 3rd node, dst_ip]
     print("got ip's succesfully:", route_ips)
     
-    # while message != "Exit":
-    #     message = input("enter message: ")
-    #     if message == '':  # empty message is not allowed 
-    #         continue
-    #     resp = tor_message(message, route_ips, rsa_key_pair)
-    #     print(resp.decode())
+    while message != "Exit":
+        message = input("enter message: ")
+        if message == '':  # empty message is not allowed 
+            continue
+        resp = tor_message(message, route_ips, rsa_key_pair)
+        print(resp.decode())
 
 def tor_message(msg : str, route : list, rsa_key_pair : crypto.Rsa) -> bytes:
     """Sends a message using the tor protocol
