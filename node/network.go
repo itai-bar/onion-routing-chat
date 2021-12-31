@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net"
+	"torbasedchat/pkg/tor_server"
 )
 
 /*
@@ -22,8 +23,7 @@ func NetworkLogon(routerAddress string) bool {
 
 	routerConn.Write([]byte(CODE_NODE_CONN))
 
-	respBuf := make([]byte, 1)
-	_, err = routerConn.Read(respBuf)
+	respBuf, err := tor_server.ReadSize(routerConn, 1)
 	if err != nil {
 		return false
 	}

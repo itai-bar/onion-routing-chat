@@ -45,7 +45,7 @@ func ReadSize(conn net.Conn, size int) ([]byte, error) {
 	helper that read data based on a size segment at
 	the start of a message
 */
-func ReadAllData(conn net.Conn, sizeSegmentLen int) ([]byte, error) {
+func ReadDataFromSizeHeader(conn net.Conn, sizeSegmentLen int) ([]byte, error) {
 	dataSizeBuf := make([]byte, sizeSegmentLen)
 	_, err := conn.Read(dataSizeBuf)
 	if err != nil {

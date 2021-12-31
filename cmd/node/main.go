@@ -3,14 +3,20 @@ package main
 import (
 	"log"
 	"torbasedchat/node"
+	"torbasedchat/pkg/tor_server"
+)
+
+const (
+	ROUTER_IP = "172.20.0.2:7777"
+	SELF_IP   = "0.0.0.0:8989"
 )
 
 func main() {
-	routerIp := "172.20.0.2:7777"
-	if node.NetworkLogon(routerIp) {
-		defer node.NetworkLogout("172.20.0.2:7777")
+	if node.NetworkLogon(ROUTER_IP) {
+		defer node.NetworkLogout(ROUTER_IP)
+
 		log.Println("Performed 'Network-Logon' with tor-network.")
-		node.RunNode("0.0.0.0:8989")
+		tor_server.RunServer(SELF_IP, node.HandleClient)
 	} else {
 		log.Println("Couldn't perform 'Network-Logon' with tor-network.")
 	}

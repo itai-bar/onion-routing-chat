@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"torbasedchat/pkg/tor_aes"
 	"torbasedchat/pkg/tor_rsa"
+	"torbasedchat/pkg/tor_server"
 )
 
 const (
@@ -24,31 +25,6 @@ type TorHeaders struct {
 	rest        []byte
 }
 
-/*
-	runs the server on a given address
-	calls HandleClient for a connected client
-
-	address string: "ip:port"
-*/
-func RunNode(address string) {
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		log.Fatal("Error in listening:\t", err)
-	}
-	defer listener.Close() // will close the listener when the function exits
-	log.Println("Listening on:\t", address)
-
-	for {
-		conn, err := listener.Accept() // new client
-		if err != nil {
-			log.Fatal("Error on accepting client:\t", err)
-		}
-		log.Println("New client:\t", conn.RemoteAddr().String())
-
-		go HandleClient(conn) // new thread to handle the client
-	}
-}
-
 func HandleClient(conn net.Conn) {
 	var nextNodeConn net.Conn
 	socketOpenFlag := false
@@ -62,7 +38,7 @@ func HandleClient(conn net.Conn) {
 	// the transfering loop will end once
 	// the client will turn the CLOSE_SOCKET flag on
 	for {
-		allData, err := GetAllDataFromSocket(conn)
+		allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 		if err != nil {
 			log.Println("ERROR: ", err)
 			return
@@ -107,30 +83,6 @@ func HandleClient(conn net.Conn) {
 }
 
 /*
-	function get all read all data from socket by first 5 bytes that are the size of the rest of th content
-*/
-func GetAllDataFromSocket(conn net.Conn) ([]byte, error) {
-	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
-	_, err := conn.Read(dataSizeBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	dataSize, err := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
-	if err != nil {
-		return nil, err
-	}
-
-	allData := make([]byte, dataSize)
-	conn.Read(allData)
-	if err != nil {
-		return nil, err
-	}
-
-	return allData, nil
-}
-
-/*
 	getting headers of tor message from the socket
 
 	data transfering message:
@@ -149,7 +101,6 @@ func GetAllDataFromSocket(conn net.Conn) ([]byte, error) {
 */
 func GetTorHeaders(allData []byte) (*TorHeaders, error) {
 	allDataReader := bytes.NewReader(allData)
-
 	closeSocketBuf := make([]byte, CLOSE_SOCKET_SIZE)
 
 	_, err := allDataReader.Read(closeSocketBuf)
@@ -166,7 +117,7 @@ func GetTorHeaders(allData []byte) (*TorHeaders, error) {
 		return nil, err
 	}
 
-	nextIp := string(RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
+	nextIp := string(tor_server.RemoveLeadingChars(nextIpBuf, '0')) // ip might come with padding
 
 	rest := make([]byte, allDataReader.Len())
 	_, err = allDataReader.Read(rest)
@@ -197,16 +148,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 	log.Println("forwarded the rest of the message")
 	// from now we expect a response from the rest of the network
 
-	// reading data size
-	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
-	_, err := conn.Read(dataSizeBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	dataSize, _ := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
-	data := make([]byte, dataSize)
-	_, err = conn.Read(data)
+	data, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
 		return nil, err
 	}
@@ -227,19 +169,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 	performs a key change with the client using a given RSA key
 */
 func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
-	lenBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
-	_, err := conn.Read(lenBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	length, err := strconv.Atoi(string(RemoveLeadingChars(lenBuf, '0')))
-	if err != nil {
-		return nil, err
-	}
-
-	pemKey := make([]byte, length)
-	_, err = conn.Read(pemKey)
+	pemKey, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
 		return nil, err
 	}
@@ -267,16 +197,4 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 
 	log.Println("sent rsa encrypted aes key")
 	return aes, nil
-}
-
-/*
-	removes every char c from the start of byte array s
-*/
-func RemoveLeadingChars(s []byte, c byte) []byte {
-	for i := range s {
-		if s[i] != c {
-			return s[i:]
-		}
-	}
-	return []byte{}
 }
