@@ -5,11 +5,11 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 	"torbasedchat/pkg/tor_rsa"
+	"torbasedchat/pkg/tor_server"
 )
 
 const (
@@ -21,34 +21,12 @@ const (
 )
 
 var networkLock sync.Mutex
+var network TorNetwork
 
 type TorNetwork map[string]struct{}
 
-/*
-	runs the server on a given address
-	calls HandleClient for a connected client
-
-	address string: "ip:port"
-*/
-func RunRouter(address string) {
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		log.Fatal("Error in listening:\t", err)
-	}
-	defer listener.Close() // will close the listener when the function exits
-	log.Println("Listening on:\t", address)
-
-	network := make(TorNetwork)
-
-	for {
-		conn, err := listener.Accept() // new client
-		if err != nil {
-			log.Fatal("Error on accepting client:\t", err)
-		}
-		log.Println("New client:\t", conn.RemoteAddr().String())
-
-		go HandleClient(conn, network) // new thread to handle the client
-	}
+func init() {
+	network = make(TorNetwork)
 }
 
 /*
@@ -57,9 +35,8 @@ func RunRouter(address string) {
 		* node disconnection
 		* tor client route request
 */
-func HandleClient(conn net.Conn, network TorNetwork) {
-	msgCode := make([]byte, REQ_CODE_SIZE)
-	_, err := conn.Read(msgCode)
+func HandleClient(conn net.Conn) {
+	msgCode, err := tor_server.ReadSize(conn, REQ_CODE_SIZE)
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return
@@ -76,7 +53,7 @@ func HandleClient(conn net.Conn, network TorNetwork) {
 		ip := conn.RemoteAddr().String()
 		ip = ip[:strings.IndexByte(ip, ':')] //slice till the port without it
 		network[ip] = struct{}{}             // init en empty struct to the map
-		conn.Write([]byte("1"))              // "1" for true - it means joined succesfully
+		conn.Write([]byte("1"))              // "1" for true - it means joined successfully
 	case CODE_NODE_DIS:
 		log.Println("got a node disconnection req")
 
@@ -130,7 +107,7 @@ func RandMapItem(network TorNetwork) (k string, v struct{}) {
 
 func SendRoute(conn net.Conn, network TorNetwork) {
 	route := GenerateRoute(network)
-	allData, err := GetAllDataFromSocket(conn)
+	allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return
@@ -151,41 +128,4 @@ func SendRoute(conn net.Conn, network TorNetwork) {
 	buf := append([]byte(paddedLen), encrypted...)
 
 	conn.Write(buf)
-}
-
-// TODO: check if we are able to move this functions to be more generic instead of duplicate it in each code
-/*
-	function get all read all data from socket by first 5 bytes that are the size of the rest of th content
-*/
-func GetAllDataFromSocket(conn net.Conn) ([]byte, error) {
-	dataSizeBuf := make([]byte, DATA_SIZE_SEGMENT_SIZE)
-	_, err := conn.Read(dataSizeBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	dataSize, err := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
-	if err != nil {
-		return nil, err
-	}
-
-	allData := make([]byte, dataSize)
-	conn.Read(allData)
-	if err != nil {
-		return nil, err
-	}
-
-	return allData, nil
-}
-
-/*
-	removes every char c from the start of byte array s
-*/
-func RemoveLeadingChars(s []byte, c byte) []byte {
-	for i := range s {
-		if s[i] != c {
-			return s[i:]
-		}
-	}
-	return []byte{}
 }
