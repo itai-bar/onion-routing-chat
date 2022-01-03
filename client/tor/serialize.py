@@ -1,6 +1,6 @@
 from os import curdir
-import const
-import crypto
+
+from . import const, crypto
 
 def serialize_tor_message(message : str, route_ips : list, close_socket : bool, aes_keys : list) -> bytes:
     """ Function creates protocoled message

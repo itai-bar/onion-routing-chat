@@ -1,6 +1,7 @@
 import sys
 import re
-import const
+
+from . import const
 
 def check_arguments_validation():
     if len(sys.argv) != 3:

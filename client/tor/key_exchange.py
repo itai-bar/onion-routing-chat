@@ -1,7 +1,7 @@
-import crypto
 import socket
-import const
-from serialize import serialize_tor_message
+
+from . import crypto, const
+from .serialize import serialize_tor_message
 
 def key_exchange(ip_path : list, sock_for_exchanging : socket.socket, rsa_obj : crypto.Rsa) -> list:
     """Function exchange aes keys using the given rsa object and returns the exchanged aes-keys as ordered(by ip's) list
