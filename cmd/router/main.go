@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
+	go router.CheckNodes()
 	tor_server.RunServer("172.20.0.2:7777", router.HandleClient)
 }
