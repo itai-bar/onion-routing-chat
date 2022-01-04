@@ -32,7 +32,8 @@ func HandleClient(conn net.Conn) {
 	// first we do a key exchange with the client
 	aes_key, err := ExchangeKey(conn)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		conn.Close()
+		return
 	}
 
 	// the transfering loop will end once
@@ -170,7 +171,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 */
 func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	pemKey, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
-	if err != nil {
+	if err != nil { // error can occur when router trying to check if node is alive
 		return nil, err
 	}
 
