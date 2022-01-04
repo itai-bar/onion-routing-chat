@@ -23,9 +23,7 @@ const (
 var networkLock sync.Mutex
 var network TorNetwork
 
-type TorNetwork map[string]struct{
-	lastEcho time.Time
-}
+type TorNetwork map[string]struct{}
 
 func init() {
 	network = make(TorNetwork)
@@ -54,7 +52,7 @@ func HandleClient(conn net.Conn) {
 
 		ip := conn.RemoteAddr().String()
 		ip = ip[:strings.IndexByte(ip, ':')] //slice till the port without it
-		network[ip] = struct{lastEcho time.Time}{time.Now()}             // init en empty struct to the map
+		network[ip] = struct{}{}             // init en empty struct to the map
 		conn.Write([]byte("1"))              // "1" for true - it means joined successfully
 	case CODE_NODE_DIS:
 		log.Println("got a node disconnection req")
@@ -63,7 +61,11 @@ func HandleClient(conn net.Conn) {
 	case CODE_ROUTE:
 		log.Println("got a client routing req")
 
-		SendRoute(conn, network)
+		if len(network) >= 3 { // gotta have 3 nodes to send a 3 nodes route..
+			SendRoute(conn, network)
+		} else {
+			// TODO: send error msg to client
+		}
 	default:
 		// TODO: send error msg to client
 		log.Println("invalid req code")
@@ -94,7 +96,7 @@ func GenerateRoute(network TorNetwork) []string {
 }
 
 // returns a random item from a tor network map
-func RandMapItem(network TorNetwork) (k string, v struct{lastEcho time.Time}) {
+func RandMapItem(network TorNetwork) (string, struct{}) {
 	rand.Seed(time.Now().UnixNano()) // initing seed
 	i := rand.Intn(len(network))
 
@@ -132,29 +134,30 @@ func SendRoute(conn net.Conn, network TorNetwork) {
 	conn.Write(buf)
 }
 
-func CheckNodes(){
-	for {
-		for node := range network{
-			currTime := time.Now()
-			diff := currTime.Sub(network[node].lastEcho)
-			if diff.Minutes() >= 0.2{
-				log.Println("sending echo to " + node)
-				if isAlive(node){
-					log.Println(node + " is Alive")
-					network[node] = struct{lastEcho time.Time}{time.Now()}
-				}else{
-					log.Println(node + " is Dead")
-					delete(network, node)
-				}
+/*
+	ping every node every 2 minutes to ensure they are alive,
+	an unresponsive will be removed from the network.
+*/
+func CheckNodes() {
+	for range time.Tick(time.Minute * 2) {
+		for node := range network {
+			if isAlive(node) {
+				log.Println(node + " is Alive")
+			} else {
+				log.Println(node + " is Dead")
+
+				networkLock.Lock()
+				delete(network, node)
+				networkLock.Unlock()
 			}
 		}
-		time.Sleep(5*time.Second)
 	}
 }
 
-func isAlive(ipAddr string) bool{
-	conn, err:= net.Dial("tcp", ipAddr+":8989")
-	if err != nil{ // if err occured, then node is dead
+// a simple "tcp ping" to an address
+func isAlive(ipAddr string) bool {
+	conn, err := net.Dial("tcp", ipAddr+":8989")
+	if err != nil { // if err occured, then node is dead
 		return false
 	}
 	conn.Close()
