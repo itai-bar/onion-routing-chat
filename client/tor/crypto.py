@@ -3,7 +3,8 @@ from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
-import const
+
+from . import const
 
 class Aes:
     def __init__(self, key : bytes=None, key_size : int=32):
