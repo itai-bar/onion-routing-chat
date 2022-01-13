@@ -22,6 +22,10 @@ const (
 
 var clients map[Cookie]Client
 
+func InitializeClientsMap() {
+	clients = make(map[Cookie]Client)
+}
+
 /*
 	handles the connection with every client
 
@@ -29,6 +33,12 @@ var clients map[Cookie]Client
 */
 func HandleClient(conn net.Conn) {
 	defer conn.Close()
+
+	_, err := tor_server.GetDataSize(conn, DATA_SIZE_SEGMENT_SIZE) //TODO:insert size when adding other cases from 'AUTH' because in that case msg is plaintext, all othe cases it's encrypted so we need to save that instead of avoiding
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return
+	}
 
 	msgCode, err := tor_server.ReadSize(conn, REQ_CODE_SIZE)
 	if err != nil {
@@ -46,7 +56,7 @@ func HandleClient(conn net.Conn) {
 		}
 
 		// creating the new client, name will be set in login
-		clients[*cookie] = Client{"", *aes, conn}
+		clients[*cookie] = Client{"", *aes}
 	default:
 		// TODO: DEAL WITH DEFAULT AND SEND ERROR MESSAGE
 	}

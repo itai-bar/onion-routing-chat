@@ -172,6 +172,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	pemKey, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil { // error can occur when router trying to check if node is alive
+		log.Println("EOF error can occur when router tring to check if node is alive..")
 		return nil, err
 	}
 

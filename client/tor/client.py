@@ -7,6 +7,8 @@ class TorClient:
         self._rsa = rsa
         self._router_ip = router_ip
         self._dst_ip = dst_ip
+        self._cookie = ""
+        self._server_aes_key = ""
 
     def send(self, msg):
         """Sends a message using the tor protocol
@@ -33,7 +35,7 @@ class TorClient:
     
             resp = crypto.decrypt_by_order(resp, aes_keys)
 
-            return resp.decode()
+            return resp
 
     def get_nodes(self):
         """get router_ip and ip_of_destination from arguments and return nodes route and dst
@@ -53,8 +55,14 @@ class TorClient:
         list_of_ips = self._rsa.decrypt(response).decode().split("&")
         list_of_ips.append(self._dst_ip)
         return list_of_ips
+    
+    def deserialize_auth_msg(self, auth_msg : bytes):
+        try:
+            self._cookie = auth_msg[:const.COOKIE_SIZE]
+            self._server_aes_key = auth_msg[const.COOKIE_SIZE:]
+        except IndexError as e:
+            print("Error: auth msg is invalid:", e)
 
-        
 def connect_to_server(ip : str, port : int) -> socket.socket:
     """The function creates TCP socket, create connection with given 'ip' and 'port' and returns the connected socket
 

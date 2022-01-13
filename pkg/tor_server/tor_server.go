@@ -46,14 +46,9 @@ func ReadSize(conn net.Conn, size int) ([]byte, error) {
 	the start of a message
 */
 func ReadDataFromSizeHeader(conn net.Conn, sizeSegmentLen int) ([]byte, error) {
-	dataSizeBuf := make([]byte, sizeSegmentLen)
-	_, err := conn.Read(dataSizeBuf)
+	dataSize, err := GetDataSize(conn, sizeSegmentLen)
 	if err != nil {
-		return nil, err
-	}
-
-	dataSize, err := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
-	if err != nil {
+		log.Println("ERROR: ", err)
 		return nil, err
 	}
 
@@ -64,6 +59,21 @@ func ReadDataFromSizeHeader(conn net.Conn, sizeSegmentLen int) ([]byte, error) {
 	}
 
 	return allData, nil
+}
+
+func GetDataSize(conn net.Conn, size int) (int, error) {
+	dataSizeBuf := make([]byte, size)
+	_, err := conn.Read(dataSizeBuf)
+	if err != nil {
+		return 0, err
+	}
+
+	dataSize, err := strconv.Atoi(string(RemoveLeadingChars(dataSizeBuf, '0')))
+	if err != nil {
+		return 0, err
+	}
+
+	return dataSize, nil
 }
 
 /*

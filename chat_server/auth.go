@@ -47,12 +47,11 @@ func CreateCookie() *Cookie {
 	returns aes key to use with the client, cookie to identify a client and error
 */
 func Auth(conn net.Conn) (*Cookie, *tor_aes.Aes, error) {
+	log.Println("entered Auth")
 	pemKey, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil { // error can occur when router trying to check if node is alive
 		return nil, nil, err
 	}
-
-	log.Println(pemKey)
 
 	// inits a rsa object with the key we got from the client
 	// creating the aes key for the rest of comm
@@ -65,9 +64,9 @@ func Auth(conn net.Conn) (*Cookie, *tor_aes.Aes, error) {
 	log.Println("got rsa key from client")
 
 	// adding the aes key and the cookie for the client
-	c := CreateCookie()
+	cookie := CreateCookie()
 
-	buf, err := rsa.Encrypt(append(c.data[:], aes.Key...))
+	buf, err := rsa.Encrypt(append(cookie.data[:], aes.Key...))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,5 +78,5 @@ func Auth(conn net.Conn) (*Cookie, *tor_aes.Aes, error) {
 	conn.Write(buf)
 
 	log.Println("sent rsa encrypted cookie + aes key")
-	return c, aes, nil
+	return cookie, aes, nil
 }
