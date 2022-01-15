@@ -84,15 +84,12 @@ func HandleClient(conn net.Conn) {
 	}
 
 	log.Println("cookie found in map")
-
-	decrypted, err := clients[*cookie].aesObj.Decrypt(data)
+	decrypted, err := clients[*cookie].aesObj.Decrypt(data[COOKIE_SIZE:])
 	if err != nil {
 		log.Println("ERROR: ", err)
 		// TODO: send error resp
 		return
 	}
-
-	log.Println("decrypted the data: ", decrypted)
 
 	// chat server logic, created the response in json
 	jsonResp := HandleRequests(code, decrypted)
