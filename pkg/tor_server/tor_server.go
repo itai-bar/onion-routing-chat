@@ -48,7 +48,6 @@ func ReadSize(conn net.Conn, size int) ([]byte, error) {
 func ReadDataFromSizeHeader(conn net.Conn, sizeSegmentLen int) ([]byte, error) {
 	dataSize, err := GetDataSize(conn, sizeSegmentLen)
 	if err != nil {
-		log.Println("ERROR: ", err)
 		return nil, err
 	}
 

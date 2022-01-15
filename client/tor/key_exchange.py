@@ -16,7 +16,7 @@ def key_exchange(ip_path : list, sock_for_exchanging : socket.socket, rsa_obj : 
     """
     aes_keys = []  # list of aes.Aes keys
     for idx, ip in enumerate(ip_path): # entering this after exchanged keys with first node
-        message = serialize_tor_message(rsa_obj.pem_public_key.decode(), ip_path[1:idx+1], False, aes_keys)
+        message = serialize_tor_message(rsa_obj.pem_public_key, ip_path[1:idx+1], False, aes_keys)
 
         sock_for_exchanging.sendall(message)
 

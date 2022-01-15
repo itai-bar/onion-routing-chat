@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	chat_server.InitializeClientsMap()
+	defer chat_server.CloseDB()
 	tor_server.RunServer("0.0.0.0:8989", chat_server.HandleClient)
 }

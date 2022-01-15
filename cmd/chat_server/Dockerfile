@@ -5,6 +5,7 @@ COPY ./pkg ./pkg
 COPY ./chat_server ./chat_server
 COPY ./cmd/chat_server/main.go ./cmd/chat_server/main.go
 COPY ./go.mod .
+COPY ./go.sum .
 
 RUN go mod download
 RUN go build ./cmd/chat_server/main.go

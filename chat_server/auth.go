@@ -2,12 +2,12 @@ package chat_server
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"torbasedchat/pkg/tor_aes"
 	"torbasedchat/pkg/tor_rsa"
-	"torbasedchat/pkg/tor_server"
 )
 
 const (
@@ -42,17 +42,25 @@ func CreateCookie() *Cookie {
 	return &c
 }
 
+func InitCookie(data []byte) (*Cookie, error) {
+	var c Cookie
+
+	if len(data) != COOKIE_SIZE {
+		return nil, errors.New("cookie size not 15")
+	}
+
+	for i, data := range data {
+		c.data[i] = data
+	}
+
+	return &c, nil
+}
+
 /*
 	performs a key change with the client using a given RSA key
 	returns aes key to use with the client, cookie to identify a client and error
 */
-func Auth(conn net.Conn) (*Cookie, *tor_aes.Aes, error) {
-	log.Println("entered Auth")
-	pemKey, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
-	if err != nil { // error can occur when router trying to check if node is alive
-		return nil, nil, err
-	}
-
+func Auth(conn net.Conn, pemKey []byte) (*Cookie, *tor_aes.Aes, error) {
 	// inits a rsa object with the key we got from the client
 	// creating the aes key for the rest of comm
 	rsa, err := tor_rsa.NewRsaGivenPemPublicKey(pemKey)

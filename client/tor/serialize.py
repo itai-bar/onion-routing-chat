@@ -2,7 +2,7 @@ from os import curdir
 
 from . import const, crypto
 
-def serialize_tor_message(message : str, route_ips : list, close_socket : bool, aes_keys : list) -> bytes:
+def serialize_tor_message(message : bytes, route_ips : list, close_socket : bool, aes_keys : list) -> bytes:
     """ Function creates protocoled message
     data transfering message:
         5  Bytes    (rest data-size)    not encrypted
@@ -21,12 +21,12 @@ def serialize_tor_message(message : str, route_ips : list, close_socket : bool, 
     Returns:
         bytes: encrypted message suited to protocol
     """
-    result = message.encode()
     flag   = (const.CLOSE_SOCKET_FLAG if close_socket else const.KEEP_SOCKET_FLAG).encode()
     
+    result = message
     for iteration in range(len(aes_keys)):  # encrypting by layers
         # filling with zeros for consistent size
-        result = flag + (route_ips[len(route_ips)-iteration-1]).zfill(15).encode() + result
+        result = flag + (route_ips[len(route_ips)-iteration-1]).zfill(15).encode() + result 
 
         curr_layer_key = aes_keys[-1-iteration]
         if isinstance(curr_layer_key, crypto.Aes):
