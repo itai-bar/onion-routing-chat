@@ -16,7 +16,7 @@ fi
 echo "Cleaning old build"
 docker-compose down > /dev/null 2>&1
 echo "Building the services"
-docker-compose build
+docker-compose build > /dev/null 2>&1
 
 docker-compose up --scale node=$NODES_AMOUNT 
 
