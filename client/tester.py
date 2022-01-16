@@ -1,4 +1,4 @@
-from cgi import test
+import string
 from tor.client import TorClient
 from tor.crypto import Rsa, Aes
 
@@ -46,8 +46,24 @@ class Tester:
         resp = self._send_req(CODE_LOGIN, req)
         print(f'{req} : {resp}')
 
+def load_RSA_from_file(path_to_keys):
+    with open(path_to_keys, 'rb') as in_file:
+        all_data = in_file.read().split(b"\n\n")
+        return all_data[0], all_data[1] # 0 is private key 1 is public key
+        
+
+def write_RSA_to_file(path_to_keys : str, keys : Rsa):
+    with open(path_to_keys, 'wb') as out_file:
+        out_file.write(keys.pem_private_key)
+        out_file.write(b'\n\n')
+        out_file.write(keys.pem_public_key)
+
 if __name__ == '__main__':
-    tester = Tester(TorClient(Rsa(), sys.argv[1], sys.argv[2]))
+    keys_file_name = 'keys.pem'
+    priv_key, pub_key = load_RSA_from_file(keys_file_name)
+    rsa_obj = Rsa(pub_key, priv_key)
+    tester = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
+
     tester.auth()
     tester.register('itai', 'pass')
 
