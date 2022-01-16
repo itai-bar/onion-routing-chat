@@ -11,16 +11,7 @@ import (
 
 const (
 	DATA_SIZE_SEGMENT_SIZE = 5
-)
-
-const (
-	REQ_CODE_SIZE = 2
-	CODE_AUTH     = "00"
-	CODE_UPDATE   = "01"
-	CODE_LOGIN    = "02"
-	CODE_REGISTER = "03"
-	CODE_LOGOUT   = "04"
-	CODE_MSG      = "05"
+	REQ_CODE_SIZE          = 2
 )
 
 var clients map[Cookie]Client
@@ -43,9 +34,6 @@ func init() {
 */
 func HandleClient(conn net.Conn) {
 	defer conn.Close()
-
-	// SIZE CODE RSA_KEY
-	// SIZE CODE COOKIE ( AES )
 
 	allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
@@ -70,10 +58,8 @@ func HandleClient(conn net.Conn) {
 	}
 
 	cookie, err := InitCookie(data[:COOKIE_SIZE])
-	log.Println("got cookie: ", *cookie)
 	if err != nil {
 		log.Println("ERROR: ", err)
-		// TODO: send error resp
 		return
 	}
 
@@ -92,12 +78,13 @@ func HandleClient(conn net.Conn) {
 	}
 
 	// chat server logic, created the response in json
-	jsonResp := HandleRequests(code, decrypted)
+	jsonResp := HandleRequests(code, decrypted, cookie)
 	// encrypting the json with the aes key saved for the specific cookie
 	encryptpedResp, err := clients[*cookie].aesObj.Encrypt([]byte(jsonResp))
 	if err != nil {
 		log.Println("ERROR: ", err)
 		// TODO: send error resp
+		return
 	}
 
 	// the network requires a data size header
@@ -108,25 +95,36 @@ func HandleClient(conn net.Conn) {
 /*
 	gets the request code and data, proccess it and returns the resp json
 */
-func HandleRequests(code string, data []byte) string {
+func HandleRequests(code string, data []byte, cookie *Cookie) string {
 	var v interface{}
 
+	// TODO: find a shorter way to do this with only one unmarshal call..
 	switch code {
 	case CODE_REGISTER:
 		var req RegisterRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			return Marshal(ErrorResponse{"invalid json"})
+			return Marshal(MakeRegisterResponse(STATUS_FAILED))
 		}
 
 		v = Register(&req)
+
+	case CODE_LOGIN:
+		var req LoginRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			return Marshal(MakeLoginResponse(STATUS_FAILED))
+		}
+
+		v = Login(&req, cookie)
 	default:
-		v = ErrorResponse{"undefined request"}
+		v = MakeErrorResponse("undefined request")
 	}
 
 	return Marshal(v)
 }
 
+// less code when using this instead of directly calling marshal
 func Marshal(v interface{}) string {
 	s, err := json.Marshal(v)
 	if err != nil {
@@ -136,16 +134,30 @@ func Marshal(v interface{}) string {
 	return string(s)
 }
 
+// registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
 	// TODO: check if there is another one with this username
 	err := RegisterDB(db, req.Username, req.Password)
 	if err != nil {
-		return ErrorResponse{"db error"}
+		log.Println("ERROR: ", err)
+		return MakeErrorResponse("db error")
 	}
 
-	return RegisterResponse{1}
+	return MakeRegisterResponse(STATUS_SUCCESS)
 }
 
+// logs the user into the system if his password and username are correct
+func Login(req *LoginRequest, cookie *Cookie) interface{} {
+	if CheckUsersPassword(db, req.Username, req.Password) {
+		if entry, ok := clients[*cookie]; ok {
+			entry.username = req.Username
+		}
+		return MakeLoginResponse(STATUS_SUCCESS)
+	}
+	return MakeLoginResponse(STATUS_FAILED)
+}
+
+// to use the global var "db" from main
 func CloseDB() {
 	db.Close()
 }

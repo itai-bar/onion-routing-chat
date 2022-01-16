@@ -18,7 +18,6 @@ class TorClient:
         """
 
         route = self.get_nodes()  # [1st node, 2nd node, 3rd node, dst_ip]
-        print("got ip's succesfully:", route)
 
         with connect_to_server(route[const.ST_NODE_IP_IDX], 8989) as sock:
             aes_keys = ke.key_exchange(route[:-1], sock, self._rsa)

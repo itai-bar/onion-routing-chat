@@ -29,11 +29,12 @@ func InitDb(path string) (*sql.DB, error) {
 }
 
 func RegisterDB(db *sql.DB, username string, password string) error {
-	sqlStmt := `
+	// TODO: check if username exists already, add return value..
+	sql := `
 		INSERT INTO USERS ( USERNAME, PASSWORD ) VALUES ( ?, ? );
 	`
 
-	stmt, err := db.Prepare(sqlStmt)
+	stmt, err := db.Prepare(sql)
 	if err != nil {
 		return err
 	}
@@ -41,4 +42,22 @@ func RegisterDB(db *sql.DB, username string, password string) error {
 	stmt.Close()
 
 	return nil
+}
+
+/*
+	checks if the password of a given username is the given password
+	helps for login
+*/
+func CheckUsersPassword(db *sql.DB, username string, password string) bool {
+	var dbPassword string
+	sql := `
+		SELECT PASSWORD FROM USERS WHERE USERNAME = ?;
+	`
+
+	err := db.QueryRow(sql, username).Scan(&dbPassword)
+	if err != nil {
+		return false
+	}
+
+	return dbPassword == password
 }

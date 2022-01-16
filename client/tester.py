@@ -34,15 +34,23 @@ class Tester:
     
     def _send_req(self, code : bytes, data : dict):
         req = code + self._cookie + self._aes.encrypt(json.dumps(data).encode())
-        return self._aes.decrypt(self._client.send(req))
+        return self._aes.decrypt(self._client.send(req)).decode()
         
-
     def register(self, username, password):
         req = { 'username' : username, 'password' : password }
-        print(self._send_req(CODE_REGISTER, req)) 
+        resp = self._send_req(CODE_REGISTER, req)
+        print(f'{req} : {resp}')
         
+    def login(self, username, password):
+        req = { 'username' : username, 'password' : password }
+        resp = self._send_req(CODE_LOGIN, req)
+        print(f'{req} : {resp}')
 
 if __name__ == '__main__':
     tester = Tester(TorClient(Rsa(), sys.argv[1], sys.argv[2]))
     tester.auth()
-    tester.register('itai', 'very secret pass')
+    tester.register('itai', 'pass')
+
+    tester.login('itai', 'pass')
+    tester.login('ita', 'pass')
+    tester.login('itai', 'wrongpass')
