@@ -2,6 +2,7 @@ package chat_server
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -76,17 +77,10 @@ func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
 	sql := `
 		INSERT INTO users ( username, password ) VALUES ( ?, ? );
 	`
-
-	stmt, err := db.Prepare(sql)
+	err := _execNoneResponseQuery(db, sql, username, password)
 	if err != nil {
 		return false, err
 	}
-	_, err = stmt.Exec(username, password)
-	if err != nil {
-		return false, err
-	}
-
-	stmt.Close()
 
 	return true, nil
 }
@@ -109,6 +103,20 @@ func CheckUsersPassword(db *sql.DB, username string, password string) bool {
 	return dbPassword == password
 }
 
+func CheckChatRoomPassword(db *sql.DB, roomName string, roomPassword string) bool {
+	var dbPassword string
+	sql := `
+		SELECT password FROM chats WHERE name = ?;
+	`
+
+	err := db.QueryRow(sql, roomName).Scan(&dbPassword)
+	if err != nil {
+		return false // chatRoom not found
+	}
+
+	return dbPassword == roomPassword
+}
+
 /*
 	creating room to DB with given parameters
 */
@@ -122,18 +130,89 @@ func CreateChatRoom(db *sql.DB, roomName string, roomPassword string, adminName 
 		INSERT INTO chats ( name, password, adminID ) VALUES ( ?, ?, ? );
 	`
 
-	stmt, err := db.Prepare(sql)
+	err = _execNoneResponseQuery(db, sql, roomName, roomPassword, adminID)
 	if err != nil {
 		return false, err
 	}
-	_, err = stmt.Exec(roomName, roomPassword, adminID)
-	if err != nil {
-		return false, err
-	}
-
-	stmt.Close()
 
 	return true, nil
+}
+
+func DeleteChatRoom(db *sql.DB, roomName string, roomPassword string, adminName string) (bool, error) {
+	_saveCurrentState(db)// in case of error we don't want data to get harm
+	adminID, err := GetUserID(db, adminName)
+	if err != nil || adminID == WITHOUT_ID {
+		return false, err
+	}
+	
+	if !RowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
+		return false, err // not all credentials are right
+	}
+
+	//TODO: delete from messages TABLE, messages that related to deleted chat room
+
+	err = _deleteRoomMembers(db, roomName, roomPassword, adminID)
+	if err != nil {
+		_revertChanges(db)
+		return false, err
+	}
+
+	err = _deleteRoom(db, roomName, roomPassword, adminID)
+	if err != nil {
+		_revertChanges(db)
+		return false, err
+	}
+
+	_saveChanges(db) // in case if success we want to save changes
+	
+	return true, nil
+}
+
+func _deleteRoomMembers(db *sql.DB, roomName string, roomPassword string, adminID int) error{
+	if !RowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
+		return errors.New("Wrong credentials, can't delete room members") // not all credentials are right
+	}
+
+	chatID, err := GetRoomID(db, roomName)
+	if err != nil || chatID == WITHOUT_ID{
+		return err
+	}
+
+	sql :=`
+		DELETE FROM chat_members WHERE chatID = ?
+	`
+	err = _execNoneResponseQuery(db, sql, chatID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func _deleteRoom(db *sql.DB, roomName string, roomPassword string, adminID int) error {
+	sql := `
+		DELETE FROM chats WHERE name = ? AND password = ? AND adminID = ?;
+	`
+	err := _execNoneResponseQuery(db, sql, roomName, roomPassword, adminID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetRoomID(db *sql.DB, roomName string) (int, error) {
+	var roomId int
+	sql := `
+		SELECT ID FROM chats WHERE name = ?;
+	`
+
+	err := db.QueryRow(sql, roomName).Scan(&roomId)
+	if err != nil {
+		return WITHOUT_ID, err // room not found
+	}
+
+	return roomId, nil
 }
 
 func GetUserID(db *sql.DB, username string) (int, error) {
@@ -148,6 +227,41 @@ func GetUserID(db *sql.DB, username string) (int, error) {
 	}
 
 	return userID, nil
+}
+
+func _execNoneResponseQuery(db *sql.DB, query string, args ...interface{}) error {
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return err
+	}
+
+	stmt.Close()
+	return nil
+}
+
+func _saveCurrentState(db *sql.DB) error{
+	sql := `
+		BEGIN TRANSACTION;
+	`
+	return _execNoneResponseQuery(db, sql)
+}
+
+func _saveChanges(db *sql.DB) error{
+	sql := `
+		END TRANSACTION;
+	`
+	return _execNoneResponseQuery(db, sql)
+}
+
+func _revertChanges(db *sql.DB) error{
+	sql := `
+		ROLLBACK;
+	`
+	return _execNoneResponseQuery(db, sql)
 }
 
 // helper to check if x exist
