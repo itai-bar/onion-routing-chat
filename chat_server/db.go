@@ -14,11 +14,44 @@ func InitDb(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	//creating users table
 	sqlStmt := `
 		CREATE TABLE IF NOT EXISTS users(
-			id 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 			username 	TEXT NOT NULL UNIQUE,
 			password 	TEXT NOT NULL
+		);
+	`
+
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		return nil, err
+	}
+
+	//creating chats table
+	sqlStmt = `
+		CREATE TABLE IF NOT EXISTS chats(
+			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			name	 	TEXT NOT NULL UNIQUE,
+			password 	TEXT NOT NULL,
+			adminID		INTEGER,
+			FOREIGN KEY(adminID) REFERENCES users(ID)
+		);
+	`
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		return nil, err
+	}
+
+	//creating chat members table
+	sqlStmt = `
+		CREATE TABLE IF NOT EXISTS chats_members(
+			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			user_id	 	TEXT NOT NULL UNIQUE,
+			chat_id 	TEXT NOT NULL,
+			state		INTEGER,
+			FOREIGN KEY(user_id) REFERENCES users(ID),
+			FOREIGN KEY(chat_id) REFERENCES chats(ID)
 		);
 	`
 
@@ -50,7 +83,7 @@ func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	stmt.Close()
 
 	return true, nil
