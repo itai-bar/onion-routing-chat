@@ -8,6 +8,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const WITHOUT_ID = 0
+
 func InitDb(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
@@ -67,9 +69,9 @@ func InitDb(path string) (*sql.DB, error) {
 	checks if a username exists in database, if not it registers a new user
 */
 func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
-	/*if RowExists("SELECT username FROM users WHERE username = ?", username) {
+	if RowExists("SELECT username FROM users WHERE username = ?", username) {
 		return false, nil
-	}*/
+	}
 
 	sql := `
 		INSERT INTO users ( username, password ) VALUES ( ?, ? );
@@ -105,6 +107,47 @@ func CheckUsersPassword(db *sql.DB, username string, password string) bool {
 	}
 
 	return dbPassword == password
+}
+
+/*
+	creating room to DB with given parameters
+*/
+func CreateChatRoom(db *sql.DB, roomName string, roomPassword string, adminName string) (bool, error) {
+	adminID, err := GetUserID(db, adminName) 
+	if err != nil || adminID == WITHOUT_ID {
+		return false, err
+	}
+	
+	sql := `
+		INSERT INTO chats ( name, password, adminID ) VALUES ( ?, ?, ? );
+	`
+
+	stmt, err := db.Prepare(sql)
+	if err != nil {
+		return false, err
+	}
+	_, err = stmt.Exec(roomName, roomPassword, adminID)
+	if err != nil {
+		return false, err
+	}
+
+	stmt.Close()
+
+	return true, nil
+}
+
+func GetUserID(db *sql.DB, username string) (int, error) {
+	var userID int
+	sql := `
+		SELECT ID FROM users WHERE username = ?;
+	`
+
+	err := db.QueryRow(sql, username).Scan(&userID)
+	if err != nil {
+		return WITHOUT_ID, err // username not found
+	}
+
+	return userID, nil
 }
 
 // helper to check if x exist

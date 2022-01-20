@@ -55,14 +55,10 @@ class Tester:
     def test(self):
         ## signup test ##
         
-        try:
-            # normal signup
-            assert self.register('itai', 'pass')['status'] == STATUS_SUCCESS
-            # same username signup
-            assert self.register('itai', 'sameusername')['status'] == STATUS_FAILED
-        except KeyError as e:
-            print("Error: user already exists") # we should handle it to be more generic cause now we now that the problem is becuase that there is UNIQUE username
-        
+        # normal signup
+        assert self.register('itai', 'pass')['status'] == STATUS_SUCCESS # ***Username already taken***
+        # same username signup
+        assert self.register('itai', 'sameusername')['status'] == STATUS_FAILED
 
         ## login test ##
 
@@ -95,4 +91,7 @@ if __name__ == '__main__':
     tester = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
 
     tester.auth()
-    tester.test() 
+    try:
+        tester.test() 
+    except KeyError as e:
+            print("Error happend with DB") # we should handle it to be more generic cause now we now that the problem is becuase that there is UNIQUE username
