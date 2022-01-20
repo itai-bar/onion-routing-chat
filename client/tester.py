@@ -65,7 +65,7 @@ class Tester:
         ## login test ##
 
         # normal login
-        assert self.login('itai1', 'pass')['status'] == STATUS_SUCCESS
+        assert self.login('itai', 'pass')['status'] == STATUS_SUCCESS
         # bad username 
         assert self.login('ita', 'pass')['status'] == STATUS_FAILED
         # bad password 

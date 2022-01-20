@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"torbasedchat/pkg/tor_server"
 )
 
@@ -14,13 +15,15 @@ const (
 	REQ_CODE_SIZE          = 2
 )
 
-var clients map[Cookie]Client
+var clients map[Cookie]*Client
 var db *sql.DB
+
+var clientsMx sync.Mutex
 
 func init() {
 	var err error
 
-	clients = make(map[Cookie]Client)
+	clients = make(map[Cookie]*Client)
 	db, err = InitDb("/app/db.sqlite")
 	if err != nil {
 		log.Fatal("ERROR: ", err)
@@ -53,9 +56,14 @@ func HandleClient(conn net.Conn) {
 		log.Println("the cookie is", *cookie)
 
 		// creating the new client, name will be set in login
-		clients[*cookie] = Client{username: "", aesObj: aes}
+
+		clientsMx.Lock()
+		clients[*cookie] = &Client{username: "", aesObj: aes}
+		clientsMx.Unlock()
 		return
 	}
+
+	// client found in map
 
 	cookie, err := InitCookie(data[:COOKIE_SIZE])
 	if err != nil {
@@ -63,14 +71,17 @@ func HandleClient(conn net.Conn) {
 		return
 	}
 
-	if _, inMap := clients[*cookie]; !inMap {
+	clientsMx.Lock()
+	currentClient, inMap := clients[*cookie]
+	clientsMx.Unlock()
+
+	if !inMap {
 		log.Println("cookie not in map")
 		// TODO: send error resp
 		return
 	}
 
-	log.Println("cookie found in map")
-	decrypted, err := clients[*cookie].aesObj.Decrypt(data[COOKIE_SIZE:])
+	decrypted, err := currentClient.aesObj.Decrypt(data[COOKIE_SIZE:])
 	if err != nil {
 		log.Println("ERROR: ", err)
 		// TODO: send error resp
@@ -78,9 +89,9 @@ func HandleClient(conn net.Conn) {
 	}
 
 	// chat server logic, created the response in json
-	jsonResp := HandleRequests(code, decrypted, cookie)
+	jsonResp := HandleRequests(code, decrypted, currentClient)
 	// encrypting the json with the aes key saved for the specific cookie
-	encryptpedResp, err := clients[*cookie].aesObj.Encrypt([]byte(jsonResp))
+	encryptpedResp, err := currentClient.aesObj.Encrypt([]byte(jsonResp))
 	if err != nil {
 		log.Println("ERROR: ", err)
 		// TODO: send error resp
@@ -95,7 +106,7 @@ func HandleClient(conn net.Conn) {
 /*
 	gets the request code and data, proccess it and returns the resp json
 */
-func HandleRequests(code string, data []byte, cookie *Cookie) string {
+func HandleRequests(code string, data []byte, client *Client) string {
 	var v interface{}
 
 	// TODO: find a shorter way to do this with only one unmarshal call..
@@ -116,7 +127,7 @@ func HandleRequests(code string, data []byte, cookie *Cookie) string {
 			return Marshal(MakeLoginResponse(STATUS_FAILED))
 		}
 
-		v = Login(&req, cookie)
+		v = Login(&req, client)
 	default:
 		v = MakeErrorResponse("undefined request")
 	}
@@ -150,11 +161,9 @@ func Register(req *RegisterRequest) interface{} {
 }
 
 // logs the user into the system if his password and username are correct
-func Login(req *LoginRequest, cookie *Cookie) interface{} {
+func Login(req *LoginRequest, client *Client) interface{} {
 	if CheckUsersPassword(db, req.Username, req.Password) {
-		if entry, ok := clients[*cookie]; ok {
-			entry.username = req.Username
-		}
+		client.username = req.Username
 		return MakeLoginResponse(STATUS_SUCCESS)
 	}
 	return MakeLoginResponse(STATUS_FAILED)
