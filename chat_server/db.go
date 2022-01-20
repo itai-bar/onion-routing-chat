@@ -47,11 +47,11 @@ func InitDb(path string) (*sql.DB, error) {
 	sqlStmt = `
 		CREATE TABLE IF NOT EXISTS chats_members(
 			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-			user_id	 	TEXT NOT NULL UNIQUE,
-			chat_id 	TEXT NOT NULL,
+			userID	 	TEXT NOT NULL UNIQUE,
+			chatID	 	TEXT NOT NULL,
 			state		INTEGER,
-			FOREIGN KEY(user_id) REFERENCES users(ID),
-			FOREIGN KEY(chat_id) REFERENCES chats(ID)
+			FOREIGN KEY(userID) REFERENCES users(ID),
+			FOREIGN KEY(chatID) REFERENCES chats(ID)
 		);
 	`
 
