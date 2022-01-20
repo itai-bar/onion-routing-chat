@@ -4,23 +4,24 @@ const (
 	STATUS_SUCCESS = 1
 	STATUS_FAILED  = 0
 
-	CODE_AUTH     = "00"
-	CODE_UPDATE   = "01"
-	CODE_LOGIN    = "02"
-	CODE_REGISTER = "03"
-	CODE_LOGOUT   = "04"
-	CODE_MSG      = "05"
-	CODE_ERR      = "11"
+	CODE_AUTH             = "00"
+	CODE_UPDATE           = "01"
+	CODE_LOGIN            = "02"
+	CODE_REGISTER         = "03"
+	CODE_LOGOUT           = "04"
+	CODE_CREATE_CHAT_ROOM = "05"
+	CODE_MSG              = "06"
+	CODE_ERR              = "11"
 )
+
+type GeneralResponse struct {
+	Code   string `json:"code"`
+	Status int    `json:"status"`
+}
 
 type RegisterRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-type RegisterResponse struct {
-	Code   string `json:"code"`
-	Status int    `json:"status"`
 }
 
 type LoginRequest struct {
@@ -28,9 +29,19 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-type LoginResponse struct {
-	Code   string `json:"code"`
-	Status int    `json:"status"`
+type CreateChatRoomRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+type JoinChatRoomRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+type DeleteChatRoomRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
 }
 
 type ErrorResponse struct {
@@ -42,12 +53,4 @@ type ErrorResponse struct {
 
 func MakeErrorResponse(err string) *ErrorResponse {
 	return &ErrorResponse{CODE_ERR, err}
-}
-
-func MakeRegisterResponse(status int) *RegisterResponse {
-	return &RegisterResponse{CODE_REGISTER, status}
-}
-
-func MakeLoginResponse(status int) *LoginResponse {
-	return &LoginResponse{CODE_LOGIN, status}
 }

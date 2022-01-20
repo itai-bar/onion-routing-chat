@@ -7,12 +7,14 @@ import sys
 
 COOKIE_SIZE = 15
 REQ_CODE_SIZE = 2
-CODE_AUTH     = b"00"
-CODE_UPDATE   = b"01"
-CODE_LOGIN    = b"02"
-CODE_REGISTER = b"03"
-CODE_LOGOUT   = b"04"
-CODE_MSG      = b"05"
+CODE_AUTH             = b"00"
+CODE_UPDATE           = b"01"
+CODE_LOGIN            = b"02"
+CODE_REGISTER         = b"03"
+CODE_LOGOUT           = b"04"
+CODE_CREATE_CHAT_ROOM = b"05"
+CODE_MSG              = b"06"
+CODE_ERR              = b"11"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
 
