@@ -136,14 +136,17 @@ func Marshal(v interface{}) string {
 
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
-	// TODO: check if there is another one with this username
-	err := RegisterDB(db, req.Username, req.Password)
+	ok, err := RegisterDB(db, req.Username, req.Password)
+
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return MakeErrorResponse("db error")
 	}
 
-	return MakeRegisterResponse(STATUS_SUCCESS)
+	if ok {
+		return MakeRegisterResponse(STATUS_SUCCESS)
+	}
+	return MakeRegisterResponse(STATUS_FAILED)
 }
 
 // logs the user into the system if his password and username are correct

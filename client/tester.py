@@ -13,6 +13,10 @@ CODE_LOGIN    = b"02"
 CODE_REGISTER = b"03"
 CODE_LOGOUT   = b"04"
 CODE_MSG      = b"05"
+STATUS_SUCCESS = 1
+STATUS_FAILED  = 0
+
+KEYS_FILES_NAME = 'keys.pem'
 
 # *** this is just a tester for the server ***
 
@@ -34,17 +38,34 @@ class Tester:
     
     def _send_req(self, code : bytes, data : dict):
         req = code + self._cookie + self._aes.encrypt(json.dumps(data).encode())
-        return self._aes.decrypt(self._client.send(req)).decode()
+        return json.loads(self._aes.decrypt(self._client.send(req)).decode())
         
     def register(self, username, password):
         req = { 'username' : username, 'password' : password }
-        resp = self._send_req(CODE_REGISTER, req)
-        print(f'{req} : {resp}')
+        return self._send_req(CODE_REGISTER, req)
         
     def login(self, username, password):
         req = { 'username' : username, 'password' : password }
-        resp = self._send_req(CODE_LOGIN, req)
-        print(f'{req} : {resp}')
+        return self._send_req(CODE_LOGIN, req)
+
+    def test(self):
+        ## signup test ##
+        
+        # normal signup
+        assert self.register('itai', 'pass')['status'] != STATUS_SUCCESS
+        # same username signup
+        assert self.register('itai', 'sameusername')['status'] != STATUS_FAILED 
+
+        ## login test ##
+
+        # normal login
+        assert self.login('itai', 'pass') != STATUS_SUCCESS
+        # bad username 
+        assert self.login('ita', 'pass') != STATUS_FAILED
+        # bad password 
+        assert self.login('itai', 'badpassword') != STATUS_FAILED
+        # bad both
+        assert self.login('ita', 'both') != STATUS_FAILED
 
 def load_RSA_from_file(path_to_keys):
     with open(path_to_keys, 'rb') as in_file:
@@ -58,15 +79,11 @@ def write_RSA_to_file(path_to_keys : str, keys : Rsa):
         out_file.write(b'\n\n')
         out_file.write(keys.pem_public_key)
 
+
 if __name__ == '__main__':
-    keys_file_name = 'keys.pem'
-    priv_key, pub_key = load_RSA_from_file(keys_file_name)
+    priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
     rsa_obj = Rsa(pub_key, priv_key)
     tester = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
 
     tester.auth()
-    tester.register('itai', 'pass')
-
-    tester.login('itai', 'pass')
-    tester.login('ita', 'pass')
-    tester.login('itai', 'wrongpass')
+    tester.test() 

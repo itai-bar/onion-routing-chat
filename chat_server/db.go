@@ -2,6 +2,8 @@ package chat_server
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -13,10 +15,10 @@ func InitDb(path string) (*sql.DB, error) {
 	}
 
 	sqlStmt := `
-		CREATE TABLE IF NOT EXISTS USERS(
-			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-			USERNAME 	TEXT NOT NULL,
-			PASSWORD 	TEXT NOT NULL
+		CREATE TABLE IF NOT EXISTS users(
+			id 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			username 	TEXT NOT NULL,
+			password 	TEXT NOT NULL
 		);
 	`
 
@@ -28,20 +30,26 @@ func InitDb(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func RegisterDB(db *sql.DB, username string, password string) error {
-	// TODO: check if username exists already, add return value..
+/*
+	checks if a username exists in database, if not it registers a new user
+*/
+func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
+	if RowExists("SELECT username FROM users WHERE username = ?", username) {
+		return false, nil
+	}
+
 	sql := `
-		INSERT INTO USERS ( USERNAME, PASSWORD ) VALUES ( ?, ? );
+		INSERT INTO users ( username, password ) VALUES ( ?, ? );
 	`
 
 	stmt, err := db.Prepare(sql)
 	if err != nil {
-		return err
+		return false, err
 	}
 	stmt.Exec(username, password)
 	stmt.Close()
 
-	return nil
+	return true, nil
 }
 
 /*
@@ -51,13 +59,25 @@ func RegisterDB(db *sql.DB, username string, password string) error {
 func CheckUsersPassword(db *sql.DB, username string, password string) bool {
 	var dbPassword string
 	sql := `
-		SELECT PASSWORD FROM USERS WHERE USERNAME = ?;
+		SELECT password FROM users WHERE username = ?;
 	`
 
 	err := db.QueryRow(sql, username).Scan(&dbPassword)
 	if err != nil {
-		return false
+		return false // username not found
 	}
 
 	return dbPassword == password
+}
+
+// helper to check if x exist
+func RowExists(query string, args ...interface{}) bool {
+	var exists bool
+	query = fmt.Sprintf("SELECT exists (%s)", query)
+	err := db.QueryRow(query, args...).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		log.Fatalf("error checking if row exists '%s' %v", args, err)
+	}
+	log.Printf("%t %s", exists, query)
+	return exists
 }
