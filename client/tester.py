@@ -38,34 +38,41 @@ class Tester:
     
     def _send_req(self, code : bytes, data : dict):
         req = code + self._cookie + self._aes.encrypt(json.dumps(data).encode())
-        return json.loads(self._aes.decrypt(self._client.send(req)).decode())
+        resp_json = json.loads(self._aes.decrypt(self._client.send(req)).decode())
+        #print(resp_json)
+        return resp_json
         
-    def register(self, username, password):
+    def register(self, username, password) -> dict:
         req = { 'username' : username, 'password' : password }
         return self._send_req(CODE_REGISTER, req)
         
-    def login(self, username, password):
+    def login(self, username, password) -> dict:
         req = { 'username' : username, 'password' : password }
         return self._send_req(CODE_LOGIN, req)
 
     def test(self):
         ## signup test ##
         
-        # normal signup
-        assert self.register('itai', 'pass')['status'] != STATUS_SUCCESS
-        # same username signup
-        assert self.register('itai', 'sameusername')['status'] != STATUS_FAILED 
+        try:
+            # normal signup
+            assert self.register('itai', 'pass')['status'] == STATUS_SUCCESS
+            # same username signup
+            assert self.register('itai', 'sameusername')['status'] == STATUS_FAILED
+        except KeyError as e:
+            print("Error: user already exists") # we should handle it to be more generic cause now we now that the problem is becuase that there is UNIQUE username
+        
 
         ## login test ##
 
         # normal login
-        assert self.login('itai', 'pass') != STATUS_SUCCESS
+        assert self.login('itai1', 'pass')['status'] == STATUS_SUCCESS
         # bad username 
-        assert self.login('ita', 'pass') != STATUS_FAILED
+        assert self.login('ita', 'pass')['status'] == STATUS_FAILED
         # bad password 
-        assert self.login('itai', 'badpassword') != STATUS_FAILED
+        assert self.login('itai', 'badpassword')['status'] == STATUS_FAILED
         # bad both
-        assert self.login('ita', 'both') != STATUS_FAILED
+        assert self.login('ita', 'both')['status'] == STATUS_FAILED
+        print("PASSED ALL TESTS!!")
 
 def load_RSA_from_file(path_to_keys):
     with open(path_to_keys, 'rb') as in_file:

@@ -17,7 +17,7 @@ func InitDb(path string) (*sql.DB, error) {
 	sqlStmt := `
 		CREATE TABLE IF NOT EXISTS users(
 			id 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-			username 	TEXT NOT NULL,
+			username 	TEXT NOT NULL UNIQUE,
 			password 	TEXT NOT NULL
 		);
 	`
@@ -34,9 +34,9 @@ func InitDb(path string) (*sql.DB, error) {
 	checks if a username exists in database, if not it registers a new user
 */
 func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
-	if RowExists("SELECT username FROM users WHERE username = ?", username) {
+	/*if RowExists("SELECT username FROM users WHERE username = ?", username) {
 		return false, nil
-	}
+	}*/
 
 	sql := `
 		INSERT INTO users ( username, password ) VALUES ( ?, ? );
@@ -46,7 +46,11 @@ func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	stmt.Exec(username, password)
+	_, err = stmt.Exec(username, password)
+	if err != nil {
+		return false, err
+	}
+	
 	stmt.Close()
 
 	return true, nil
