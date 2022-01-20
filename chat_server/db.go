@@ -118,3 +118,7 @@ func RowExists(query string, args ...interface{}) bool {
 	log.Printf("%t %s", exists, query)
 	return exists
 }
+
+func CloseDB() {
+	db.Close()
+}
