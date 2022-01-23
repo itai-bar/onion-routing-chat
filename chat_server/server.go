@@ -1,7 +1,6 @@
 package chat_server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -21,28 +20,30 @@ type Client struct {
 	aesObj   *tor_aes.Aes
 }
 
-// type ChatRoom struct {
-// 	onlineMembers []*Client
-// }
+type ChatRoom struct {
+	onlineMembers []*Client
+}
 
 var clients map[Cookie]*Client
+var chatRooms map[string]*ChatRoom
 
-// var chatRooms map[string]*ChatRoom
-
-var db *sql.DB
+var db *ChatDb
 
 var clientsMx sync.Mutex
-
-// var chatRoomsMx sync.Mutex
+var chatRoomsMx sync.Mutex
 
 func init() {
 	var err error
 
 	clients = make(map[Cookie]*Client)
-	db, err = InitDb("/app/db.sqlite")
+	chatRooms = make(map[string]*ChatRoom)
+
+	sqlDb, err := InitDb("/app/db.sqlite")
 	if err != nil {
 		log.Fatal("ERROR: ", err)
 	}
+
+	db = InitChatDb(sqlDb)
 }
 
 /*
@@ -97,6 +98,8 @@ func HandleClient(conn net.Conn) {
 	}
 
 	decrypted, err := currentClient.aesObj.Decrypt(data[COOKIE_SIZE:])
+	log.Printf("client: %s. req: %s", currentClient.username, string(decrypted))
+
 	if err != nil {
 		log.Println("ERROR: ", err)
 		// TODO: send error resp
@@ -122,7 +125,15 @@ func HandleClient(conn net.Conn) {
 	gets the request code and data, proccess it and returns the resp json
 */
 func HandleRequests(code string, data []byte, client *Client) string {
-	var v interface{}
+	var resp interface{}
+
+	// those requests require to be logged in
+	if code != CODE_REGISTER && code != CODE_LOGIN {
+		if client.username == "" {
+			// not logged in
+			return Marshal(MakeErrorResponse("Must log in to use this request"))
+		}
+	}
 
 	// TODO: find a shorter way to do this with only one unmarshal call..
 	switch code {
@@ -130,24 +141,47 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req RegisterRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			log.Println("ERROR: ", err)
 			return Marshal(GeneralResponse{CODE_REGISTER, STATUS_FAILED})
 		}
 
-		v = Register(&req)
+		resp = Register(&req)
 
 	case CODE_LOGIN:
 		var req LoginRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			log.Println("ERROR: ", err)
 			return Marshal(GeneralResponse{CODE_LOGIN, STATUS_FAILED})
 		}
 
-		v = Login(&req, client)
+		resp = Login(&req, client)
+
+	case CODE_CREATE_CHAT_ROOM:
+		var req CreateChatRoomRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			log.Println("ERROR: ", err)
+			return Marshal(GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED})
+		}
+
+		resp = CreateChatRoom(&req, client)
+
+	case CODE_DELETE_CHAT_ROOM:
+		var req DeleteChatRoomRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			log.Println("ERROR: ", err)
+			return Marshal(GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED})
+		}
+
+		resp = DeleteChatRoom(&req, client)
+
 	default:
-		v = MakeErrorResponse("undefined request")
+		resp = MakeErrorResponse("undefined request")
 	}
 
-	return Marshal(v)
+	return Marshal(resp)
 }
 
 // less code when using this instead of directly calling marshal

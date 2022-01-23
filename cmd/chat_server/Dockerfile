@@ -7,7 +7,7 @@ COPY ./cmd/chat_server/main.go ./cmd/chat_server/main.go
 COPY ./go.mod .
 COPY ./go.sum .
 #using old DB instead of re-creating it
-COPY ./db.sqlite ./db.sqlite
+# COPY ./db.sqlite ./db.sqlite
 
 RUN go mod download
 RUN go build ./cmd/chat_server/main.go

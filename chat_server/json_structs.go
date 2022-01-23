@@ -10,7 +10,8 @@ const (
 	CODE_REGISTER         = "03"
 	CODE_LOGOUT           = "04"
 	CODE_CREATE_CHAT_ROOM = "05"
-	CODE_MSG              = "06"
+	CODE_DELETE_CHAT_ROOM = "06"
+	CODE_JOIN_CHAT_ROOM   = "07"
 	CODE_ERR              = "11"
 )
 

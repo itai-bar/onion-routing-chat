@@ -4,7 +4,15 @@ import "log"
 
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
-	ok, err := RegisterDB(db, req.Username, req.Password)
+	// username must not be empty (thats how we check if a user is logged or not)
+	// TODO: if there any password requirements thats the place to add them..
+	if req.Username == "" {
+		log.Println("NO WAY", req.Username, req.Password)
+		return GeneralResponse{CODE_REGISTER, STATUS_FAILED}
+	}
+
+	ok, err := db.RegisterDB(req.Username, req.Password)
+	log.Println("got the register ans and it is : ", ok)
 
 	if err != nil {
 		log.Println("ERROR: ", err)
@@ -19,9 +27,46 @@ func Register(req *RegisterRequest) interface{} {
 
 // logs the user into the system if his password and username are correct
 func Login(req *LoginRequest, client *Client) interface{} {
-	if CheckUsersPassword(db, req.Username, req.Password) {
+	if db.CheckUsersPassword(req.Username, req.Password) {
 		client.username = req.Username
 		return GeneralResponse{CODE_LOGIN, STATUS_SUCCESS}
 	}
 	return GeneralResponse{CODE_LOGIN, STATUS_FAILED}
+}
+
+// creates a new room and joins the client as the admin
+func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
+	ok, err := db.CreateChatRoomDB(req.Name, req.Password, client.username)
+
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
+	}
+	if ok {
+		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	// room was created successfully, now add the client to it
+	chatRoomsMx.Lock()
+	chatRooms[req.Name].onlineMembers = append(chatRooms[req.Name].onlineMembers, client)
+	chatRoomsMx.Unlock()
+
+	return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_SUCCESS}
+}
+
+func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
+	ok, err := db.DeleteChatRoomDB(req.Name, req.Password, client.username)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
+	}
+	if ok {
+		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	chatRoomsMx.Lock()
+	delete(chatRooms, req.Name)
+	chatRoomsMx.Unlock()
+
+	return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_SUCCESS}
 }

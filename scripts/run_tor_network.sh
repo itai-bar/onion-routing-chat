@@ -21,8 +21,8 @@ docker-compose build > /dev/null 2>&1
 
 docker-compose up --scale node=$NODES_AMOUNT
 
-echo "Saving Database"
-docker cp torbasedchat_chat_server_1:/app/db.sqlite . # saving DB to host for next executions
+# echo "Saving Database"
+# docker cp torbasedchat_chat_server_1:/app/db.sqlite . # saving DB to host for next executions
 
 # cleanup
 echo "Cleaning the build"

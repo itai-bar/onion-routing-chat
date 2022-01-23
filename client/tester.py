@@ -13,7 +13,8 @@ CODE_LOGIN            = b"02"
 CODE_REGISTER         = b"03"
 CODE_LOGOUT           = b"04"
 CODE_CREATE_CHAT_ROOM = b"05"
-CODE_MSG              = b"06"
+CODE_DELETE_CHAT_ROOM = b"06"
+CODE_JOIN_CHAT_ROOM   = b"07"
 CODE_ERR              = b"11"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
@@ -41,7 +42,7 @@ class Tester:
     def _send_req(self, code : bytes, data : dict):
         req = code + self._cookie + self._aes.encrypt(json.dumps(data).encode())
         resp_json = json.loads(self._aes.decrypt(self._client.send(req)).decode())
-        #print(resp_json)
+        print(resp_json)
         return resp_json
         
     def register(self, username, password) -> dict:
@@ -51,26 +52,18 @@ class Tester:
     def login(self, username, password) -> dict:
         req = { 'username' : username, 'password' : password }
         return self._send_req(CODE_LOGIN, req)
-
-    def test(self):
-        ## signup test ##
-        
-        # normal signup
-        assert self.register('itai', 'pass')['status'] == STATUS_SUCCESS # ***Username already taken***
-        # same username signup
-        assert self.register('itai', 'sameusername')['status'] == STATUS_FAILED
-
-        ## login test ##
-
-        # normal login
-        assert self.login('itai', 'pass')['status'] == STATUS_SUCCESS
-        # bad username 
-        assert self.login('ita', 'pass')['status'] == STATUS_FAILED
-        # bad password 
-        assert self.login('itai', 'badpassword')['status'] == STATUS_FAILED
-        # bad both
-        assert self.login('ita', 'both')['status'] == STATUS_FAILED
-        print("PASSED ALL TESTS!!")
+    
+    def create_room(self, name, password) -> dict:
+        req = { 'name' : name, 'password' : password}
+        return self._send_req(CODE_CREATE_CHAT_ROOM, req)
+    
+    def delete_room(self, name, password) -> dict:
+        req = { 'name' : name, 'password' : password}
+        return self._send_req(CODE_DELETE_CHAT_ROOM, req)
+    
+    def join_room(self, room_name, password) -> dict:
+        req = { 'name' : room_name, 'password' : password }
+        return self._send_req(CODE_JOIN_CHAT_ROOM, req)
 
 def load_RSA_from_file(path_to_keys):
     with open(path_to_keys, 'rb') as in_file:
@@ -84,14 +77,13 @@ def write_RSA_to_file(path_to_keys : str, keys : Rsa):
         out_file.write(b'\n\n')
         out_file.write(keys.pem_public_key)
 
-
 if __name__ == '__main__':
     priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
     rsa_obj = Rsa(pub_key, priv_key)
     tester = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
 
     tester.auth()
-    try:
-        tester.test() 
-    except KeyError as e:
-            print("Error happend with DB") # we should handle it to be more generic cause now we now that the problem is becuase that there is UNIQUE username
+    tester.register('tal', 'pass')
+    tester.login('tal', 'pass')
+    tester.create_room('my_room', 'room_pass')
+    

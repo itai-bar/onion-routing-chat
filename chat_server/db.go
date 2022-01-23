@@ -9,7 +9,15 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type ChatDb struct {
+	*sql.DB
+}
+
 const WITHOUT_ID = 0
+
+func InitChatDb(db *sql.DB) *ChatDb {
+	return &ChatDb{db}
+}
 
 func InitDb(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", path)
@@ -69,15 +77,15 @@ func InitDb(path string) (*sql.DB, error) {
 /*
 	checks if a username exists in database, if not it registers a new user
 */
-func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
-	if RowExists("SELECT username FROM users WHERE username = ?", username) {
+func (db *ChatDb) RegisterDB(username string, password string) (bool, error) {
+	if db._rowExists("SELECT username FROM users WHERE username = ?", username) {
 		return false, nil
 	}
 
 	sql := `
 		INSERT INTO users ( username, password ) VALUES ( ?, ? );
 	`
-	err := _execNoneResponseQuery(db, sql, username, password)
+	err := db._execNoneResponseQuery(sql, username, password)
 	if err != nil {
 		return false, err
 	}
@@ -89,7 +97,7 @@ func RegisterDB(db *sql.DB, username string, password string) (bool, error) {
 	checks if the password of a given username is the given password
 	helps for login
 */
-func CheckUsersPassword(db *sql.DB, username string, password string) bool {
+func (db *ChatDb) CheckUsersPassword(username string, password string) bool {
 	var dbPassword string
 	sql := `
 		SELECT password FROM users WHERE username = ?;
@@ -103,7 +111,7 @@ func CheckUsersPassword(db *sql.DB, username string, password string) bool {
 	return dbPassword == password
 }
 
-func CheckChatRoomPassword(db *sql.DB, roomName string, roomPassword string) bool {
+func (db *ChatDb) CheckChatRoomPassword(roomName string, roomPassword string) bool {
 	var dbPassword string
 	sql := `
 		SELECT password FROM chats WHERE name = ?;
@@ -120,17 +128,17 @@ func CheckChatRoomPassword(db *sql.DB, roomName string, roomPassword string) boo
 /*
 	creating room to DB with given parameters
 */
-func CreateChatRoom(db *sql.DB, roomName string, roomPassword string, adminName string) (bool, error) {
-	adminID, err := GetUserID(db, adminName) 
+func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
+	adminID, err := db.GetUserID(adminName)
 	if err != nil || adminID == WITHOUT_ID {
 		return false, err
 	}
-	
+
 	sql := `
 		INSERT INTO chats ( name, password, adminID ) VALUES ( ?, ?, ? );
 	`
 
-	err = _execNoneResponseQuery(db, sql, roomName, roomPassword, adminID)
+	err = db._execNoneResponseQuery(sql, roomName, roomPassword, adminID)
 	if err != nil {
 		return false, err
 	}
@@ -138,50 +146,50 @@ func CreateChatRoom(db *sql.DB, roomName string, roomPassword string, adminName 
 	return true, nil
 }
 
-func DeleteChatRoom(db *sql.DB, roomName string, roomPassword string, adminName string) (bool, error) {
-	_saveCurrentState(db)// in case of error we don't want data to get harm
-	adminID, err := GetUserID(db, adminName)
+func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
+	db._saveCurrentState() // in case of error we don't want data to get harm
+	adminID, err := db.GetUserID(adminName)
 	if err != nil || adminID == WITHOUT_ID {
 		return false, err
 	}
-	
-	if !RowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
+
+	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
 		return false, err // not all credentials are right
 	}
 
 	//TODO: delete from messages TABLE, messages that related to deleted chat room
 
-	err = _deleteRoomMembers(db, roomName, roomPassword, adminID)
+	err = db._deleteRoomMembers(roomName, roomPassword, adminID)
 	if err != nil {
-		_revertChanges(db)
+		db._revertChanges()
 		return false, err
 	}
 
-	err = _deleteRoom(db, roomName, roomPassword, adminID)
+	err = db._deleteRoom(roomName, roomPassword, adminID)
 	if err != nil {
-		_revertChanges(db)
+		db._revertChanges()
 		return false, err
 	}
 
-	_saveChanges(db) // in case if success we want to save changes
-	
+	db._saveChanges() // in case if success we want to save changes
+
 	return true, nil
 }
 
-func _deleteRoomMembers(db *sql.DB, roomName string, roomPassword string, adminID int) error{
-	if !RowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
-		return errors.New("Wrong credentials, can't delete room members") // not all credentials are right
+func (db *ChatDb) _deleteRoomMembers(roomName string, roomPassword string, adminID int) error {
+	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
+		return errors.New("wrong credentials, can't delete room members") // not all credentials are right
 	}
 
-	chatID, err := GetRoomID(db, roomName)
-	if err != nil || chatID == WITHOUT_ID{
+	chatID, err := db.GetRoomID(roomName)
+	if err != nil || chatID == WITHOUT_ID {
 		return err
 	}
 
-	sql :=`
+	sql := `
 		DELETE FROM chat_members WHERE chatID = ?
 	`
-	err = _execNoneResponseQuery(db, sql, chatID)
+	err = db._execNoneResponseQuery(sql, chatID)
 	if err != nil {
 		return err
 	}
@@ -190,18 +198,18 @@ func _deleteRoomMembers(db *sql.DB, roomName string, roomPassword string, adminI
 
 }
 
-func _deleteRoom(db *sql.DB, roomName string, roomPassword string, adminID int) error {
+func (db *ChatDb) _deleteRoom(roomName string, roomPassword string, adminID int) error {
 	sql := `
 		DELETE FROM chats WHERE name = ? AND password = ? AND adminID = ?;
 	`
-	err := _execNoneResponseQuery(db, sql, roomName, roomPassword, adminID)
+	err := db._execNoneResponseQuery(sql, roomName, roomPassword, adminID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetRoomID(db *sql.DB, roomName string) (int, error) {
+func (db *ChatDb) GetRoomID(roomName string) (int, error) {
 	var roomId int
 	sql := `
 		SELECT ID FROM chats WHERE name = ?;
@@ -215,7 +223,7 @@ func GetRoomID(db *sql.DB, roomName string) (int, error) {
 	return roomId, nil
 }
 
-func GetUserID(db *sql.DB, username string) (int, error) {
+func (db *ChatDb) GetUserID(username string) (int, error) {
 	var userID int
 	sql := `
 		SELECT ID FROM users WHERE username = ?;
@@ -229,7 +237,7 @@ func GetUserID(db *sql.DB, username string) (int, error) {
 	return userID, nil
 }
 
-func _execNoneResponseQuery(db *sql.DB, query string, args ...interface{}) error {
+func (db *ChatDb) _execNoneResponseQuery(query string, args ...interface{}) error {
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return err
@@ -243,29 +251,29 @@ func _execNoneResponseQuery(db *sql.DB, query string, args ...interface{}) error
 	return nil
 }
 
-func _saveCurrentState(db *sql.DB) error{
+func (db *ChatDb) _saveCurrentState() error {
 	sql := `
 		BEGIN TRANSACTION;
 	`
-	return _execNoneResponseQuery(db, sql)
+	return db._execNoneResponseQuery(sql)
 }
 
-func _saveChanges(db *sql.DB) error{
+func (db *ChatDb) _saveChanges() error {
 	sql := `
 		END TRANSACTION;
 	`
-	return _execNoneResponseQuery(db, sql)
+	return db._execNoneResponseQuery(sql)
 }
 
-func _revertChanges(db *sql.DB) error{
+func (db *ChatDb) _revertChanges() error {
 	sql := `
 		ROLLBACK;
 	`
-	return _execNoneResponseQuery(db, sql)
+	return db._execNoneResponseQuery(sql)
 }
 
 // helper to check if x exist
-func RowExists(query string, args ...interface{}) bool {
+func (db *ChatDb) _rowExists(query string, args ...interface{}) bool {
 	var exists bool
 	query = fmt.Sprintf("SELECT exists (%s)", query)
 	err := db.QueryRow(query, args...).Scan(&exists)
