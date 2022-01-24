@@ -1,3 +1,4 @@
+from cgi import test
 import string
 from tor.client import TorClient
 from tor.crypto import Rsa, Aes
@@ -80,13 +81,23 @@ def write_RSA_to_file(path_to_keys : str, keys : Rsa):
 if __name__ == '__main__':
     priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
     rsa_obj = Rsa(pub_key, priv_key)
-    tester = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
+    tester_tal = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
+    tester_itai = Tester(TorClient(rsa_obj, sys.argv[1], sys.argv[2]))
 
-    tester.auth()
-    tester.register('tal', 'pass')
-    tester.login('tal', 'pass')
-    tester.create_room('my_room', 'room_pass')
-    tester.create_room('my_room', 'room_pass') # should be failed
-    tester.delete_room('my_room', 'room_pass') 
-    tester.create_room('my_room', 'room_pass') # should now work
+    tester_tal.auth()
+    tester_itai.auth()
+
+    assert tester_tal.register('tal', 'pass')['status'] == STATUS_SUCCESS
+    assert tester_tal.login('tal', 'pass')['status'] == STATUS_SUCCESS
+    assert tester_tal.create_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
+    assert tester_tal.create_room('my_room', 'room_pass')['status'] == STATUS_FAILED
+    assert tester_tal.delete_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
+    assert tester_tal.create_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
+
+    assert tester_itai.register('itai', 'long_pass')['status'] == STATUS_SUCCESS
+    assert tester_itai.login('itai', 'forgot_pass')['status'] == STATUS_FAILED
+    assert tester_itai.login('itai', 'long_pass')['status'] == STATUS_SUCCESS
+    assert tester_itai.join_room('my_room', 'wrong_pass')['status'] == STATUS_FAILED
+    assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
+    assert tester_itai.delete_room('my_room', 'room_pass')['status'] == STATUS_FAILED
     
