@@ -86,4 +86,7 @@ if __name__ == '__main__':
     tester.register('tal', 'pass')
     tester.login('tal', 'pass')
     tester.create_room('my_room', 'room_pass')
+    tester.create_room('my_room', 'room_pass') # should be failed
+    tester.delete_room('my_room', 'room_pass') 
+    tester.create_room('my_room', 'room_pass') # should now work
     

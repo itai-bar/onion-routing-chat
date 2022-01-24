@@ -98,7 +98,7 @@ func HandleClient(conn net.Conn) {
 	}
 
 	decrypted, err := currentClient.aesObj.Decrypt(data[COOKIE_SIZE:])
-	log.Printf("client: %s. req: %s", currentClient.username, string(decrypted))
+	log.Printf("client: %s. req: %s+%s", currentClient.username, code, string(decrypted))
 
 	if err != nil {
 		log.Println("ERROR: ", err)

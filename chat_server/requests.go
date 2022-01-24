@@ -42,12 +42,23 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 		log.Println("ERROR: ", err)
 		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
 	}
-	if ok {
+	if !ok {
 		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	// room was created successfully, now add the client to it
+	// add admin to the chat db members
+	ok, err = db.AddRoomMember(req.Name, req.Password, client.username)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
+	}
+	if !ok {
+		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	// initing the live room, adding the client to it
 	chatRoomsMx.Lock()
+	chatRooms[req.Name] = &ChatRoom{onlineMembers: make([]*Client, 0)}
 	chatRooms[req.Name].onlineMembers = append(chatRooms[req.Name].onlineMembers, client)
 	chatRoomsMx.Unlock()
 
@@ -60,7 +71,7 @@ func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 		log.Println("ERROR: ", err)
 		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
 	}
-	if ok {
+	if !ok {
 		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
 	}
 

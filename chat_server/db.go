@@ -54,11 +54,16 @@ func InitDb(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	//creating chat members table
+	// creating chat members table
+	// state field: there are two states of connections to a room.
+	// 		0 - a room member
+	//		1 - banned from the room by an admin
+
+	// TODO: ask tal if userID should be unique
 	sqlStmt = `
 		CREATE TABLE IF NOT EXISTS chats_members(
 			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-			userID	 	TEXT NOT NULL UNIQUE,
+			userID	 	TEXT NOT NULL UNIQUE, 
 			chatID	 	TEXT NOT NULL,
 			state		INTEGER,
 			FOREIGN KEY(userID) REFERENCES users(ID),
@@ -129,7 +134,7 @@ func (db *ChatDb) CheckChatRoomPassword(roomName string, roomPassword string) bo
 	creating room to DB with given parameters
 */
 func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
-	adminID, err := db.GetUserID(adminName)
+	adminID, err := db._getUserID(adminName)
 	if err != nil || adminID == WITHOUT_ID {
 		return false, err
 	}
@@ -148,7 +153,7 @@ func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminNa
 
 func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
 	db._saveCurrentState() // in case of error we don't want data to get harm
-	adminID, err := db.GetUserID(adminName)
+	adminID, err := db._getUserID(adminName)
 	if err != nil || adminID == WITHOUT_ID {
 		return false, err
 	}
@@ -176,18 +181,47 @@ func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminNa
 	return true, nil
 }
 
+func (db *ChatDb) AddRoomMember(roomName string, roomPassword string, username string) (bool, error) {
+	// using the userID in db
+	userId, err := db._getUserID(username)
+	if err != nil || userId == WITHOUT_ID {
+		return false, err
+	}
+
+	// using the the roomId in db
+	roomId, err := db._getRoomID(roomName)
+	if err != nil || roomId == WITHOUT_ID {
+		return false, err
+	}
+
+	// password has to match
+	if !db.CheckChatRoomPassword(roomName, roomPassword) {
+		return false, nil
+	}
+
+	sql := `
+		INSERT INTO chats_members ( userID, chatID, state ) VALUES ( ?, ?, ? );
+	`
+
+	err = db._execNoneResponseQuery(sql, userId, roomId, 0)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (db *ChatDb) _deleteRoomMembers(roomName string, roomPassword string, adminID int) error {
 	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
 		return errors.New("wrong credentials, can't delete room members") // not all credentials are right
 	}
 
-	chatID, err := db.GetRoomID(roomName)
+	chatID, err := db._getRoomID(roomName)
 	if err != nil || chatID == WITHOUT_ID {
 		return err
 	}
 
 	sql := `
-		DELETE FROM chat_members WHERE chatID = ?
+		DELETE FROM chats_members WHERE chatID = ?
 	`
 	err = db._execNoneResponseQuery(sql, chatID)
 	if err != nil {
@@ -209,7 +243,7 @@ func (db *ChatDb) _deleteRoom(roomName string, roomPassword string, adminID int)
 	return nil
 }
 
-func (db *ChatDb) GetRoomID(roomName string) (int, error) {
+func (db *ChatDb) _getRoomID(roomName string) (int, error) {
 	var roomId int
 	sql := `
 		SELECT ID FROM chats WHERE name = ?;
@@ -223,7 +257,7 @@ func (db *ChatDb) GetRoomID(roomName string) (int, error) {
 	return roomId, nil
 }
 
-func (db *ChatDb) GetUserID(username string) (int, error) {
+func (db *ChatDb) _getUserID(username string) (int, error) {
 	var userID int
 	sql := `
 		SELECT ID FROM users WHERE username = ?;
@@ -280,7 +314,6 @@ func (db *ChatDb) _rowExists(query string, args ...interface{}) bool {
 	if err != nil && err != sql.ErrNoRows {
 		log.Fatalf("error checking if row exists '%s' %v", args, err)
 	}
-	log.Printf("%t %s", exists, query)
 	return exists
 }
 
