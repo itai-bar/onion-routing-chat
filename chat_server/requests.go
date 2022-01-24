@@ -47,7 +47,7 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 	}
 
 	// add admin to the chat db members
-	ok, err = db.AddRoomMember(req.Name, req.Password, client.username)
+	ok, err = db.JoinChatRoomDB(req.Name, req.Password, client.username)
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
@@ -80,4 +80,21 @@ func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 	chatRoomsMx.Unlock()
 
 	return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_SUCCESS}
+}
+
+func JoinChatRoom(req *JoinChatRoomRequest, client *Client) interface{} {
+	ok, err := db.JoinChatRoomDB(req.Name, req.Password, client.username)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED}
+	}
+	if !ok {
+		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	chatRoomsMx.Lock()
+	chatRooms[req.Name].onlineMembers = append(chatRooms[req.Name].onlineMembers, client)
+	chatRoomsMx.Unlock()
+
+	return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_SUCCESS}
 }

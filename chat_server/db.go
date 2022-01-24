@@ -178,7 +178,7 @@ func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminNa
 	return true, nil
 }
 
-func (db *ChatDb) AddRoomMember(roomName string, roomPassword string, username string) (bool, error) {
+func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username string) (bool, error) {
 	// using the userID in db
 	userId, err := db._getUserID(username)
 	if err != nil || userId == WITHOUT_ID {

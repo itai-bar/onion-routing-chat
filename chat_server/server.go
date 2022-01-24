@@ -166,17 +166,24 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		}
 
 		resp = CreateChatRoom(&req, client)
-
 	case CODE_DELETE_CHAT_ROOM:
 		var req DeleteChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
 			log.Println("ERROR: ", err)
-			return Marshal(GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED})
+			return Marshal(GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED})
 		}
 
 		resp = DeleteChatRoom(&req, client)
+	case CODE_JOIN_CHAT_ROOM:
+		var req JoinChatRoomRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			log.Println("Error: ", err)
+			return Marshal(GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED})
+		}
 
+		resp = JoinChatRoom(&req, client)
 	default:
 		resp = MakeErrorResponse("undefined request")
 	}
