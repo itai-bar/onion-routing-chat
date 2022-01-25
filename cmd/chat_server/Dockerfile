@@ -1,5 +1,8 @@
 FROM golang:latest
 
+ARG CHAT_LOG
+ENV CHAT_LOG=${CHAT_LOG}
+
 WORKDIR /app
 COPY ./pkg ./pkg
 COPY ./chat_server ./chat_server
@@ -14,4 +17,4 @@ RUN go build ./cmd/chat_server/main.go
 
 EXPOSE 8989
 
-CMD [ "./main" ]
+CMD ./main ${CHAT_LOG}}

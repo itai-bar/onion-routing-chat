@@ -1,5 +1,8 @@
 FROM golang:latest
 
+ARG ROUTER_LOG 
+ENV ROUTER_LOG=${ROUTER_LOG}
+
 WORKDIR /app
 COPY ./pkg ./pkg
 COPY ./router ./router
@@ -12,4 +15,4 @@ RUN go build ./cmd/router/main.go
 
 EXPOSE 7777
 
-CMD [ "./main" ]
+CMD ./main ${ROUTER_LOG}}

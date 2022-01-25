@@ -178,7 +178,7 @@ func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminNa
 	return true, nil
 }
 
-func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username string, state bool) (bool, error) {
+func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username string, banState bool) (bool, error) {
 	// using the userID in db
 	userId, err := db._getUserID(username)
 	if err != nil || userId == WITHOUT_ID {
@@ -192,7 +192,7 @@ func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username 
 	}
 
 	// password has to match or giving ban
-	if !db.CheckChatRoomPassword(roomName, roomPassword) && state != STATE_BAN{
+	if !db.CheckChatRoomPassword(roomName, roomPassword) && !banState {
 		return false, nil
 	}
 
@@ -200,7 +200,7 @@ func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username 
 		INSERT INTO chats_members ( userID, chatID, state ) VALUES ( ?, ?, ? );
 	`
 
-	err = db._execNoneResponseQuery(sql, userId, roomId, state)
+	err = db._execNoneResponseQuery(sql, userId, roomId, banState)
 	if err != nil {
 		return false, err
 	}
@@ -209,7 +209,7 @@ func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username 
 
 func (db *ChatDb) KickFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {
 	isAdmin, err := db._isAdminOfRoom(roomName, adminName)
-	if !isAdmin || err != nil{
+	if !isAdmin || err != nil {
 		return false, err
 	}
 
