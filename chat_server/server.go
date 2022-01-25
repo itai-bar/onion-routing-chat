@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"torbasedchat/pkg/tor_aes"
+	"torbasedchat/pkg/tor_logger"
 	"torbasedchat/pkg/tor_server"
 )
 
@@ -32,8 +34,12 @@ var db *ChatDb
 var clientsMx sync.Mutex
 var chatRoomsMx sync.Mutex
 
+var logger *tor_logger.TorLogger
+
 func init() {
 	var err error
+
+	logger = tor_logger.NewTorLogger(os.Getenv("CHAT_LOG"))
 
 	clients = make(map[Cookie]*Client)
 	chatRooms = make(map[string]*ChatRoom)
@@ -56,7 +62,7 @@ func HandleClient(conn net.Conn) {
 
 	allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
@@ -65,11 +71,11 @@ func HandleClient(conn net.Conn) {
 	if code == CODE_AUTH {
 		cookie, aes, err := Auth(conn, data)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Err.Println(err)
 			return
 		}
 
-		log.Println("the cookie is", *cookie)
+		logger.Info.Println("the cookie is", *cookie)
 
 		// creating the new client, name will be set in login
 
@@ -83,7 +89,7 @@ func HandleClient(conn net.Conn) {
 
 	cookie, err := InitCookie(data[:COOKIE_SIZE])
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
@@ -92,16 +98,16 @@ func HandleClient(conn net.Conn) {
 	clientsMx.Unlock()
 
 	if !inMap {
-		log.Println("cookie not in map")
+		logger.Err.Println("cookie not in map")
 		// TODO: send error resp
 		return
 	}
 
 	decrypted, err := currentClient.aesObj.Decrypt(data[COOKIE_SIZE:])
-	log.Printf("client: %s. req: %s+%s", currentClient.username, code, string(decrypted))
+	logger.Info.Printf("client: %s. req: %s+%s", currentClient.username, code, string(decrypted))
 
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		// TODO: send error resp
 		return
 	}
@@ -111,7 +117,7 @@ func HandleClient(conn net.Conn) {
 	// encrypting the json with the aes key saved for the specific cookie
 	encryptpedResp, err := currentClient.aesObj.Encrypt([]byte(jsonResp))
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		// TODO: send error resp
 		return
 	}
@@ -141,7 +147,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req RegisterRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_REGISTER, STATUS_FAILED})
 		}
 
@@ -151,7 +157,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req LoginRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_LOGIN, STATUS_FAILED})
 		}
 
@@ -161,7 +167,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req CreateChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED})
 		}
 
@@ -170,7 +176,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req DeleteChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED})
 		}
 
@@ -179,7 +185,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req JoinChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("Error: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED})
 		}
 
@@ -188,7 +194,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req KickFromChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("Error: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED})
 		}
 
@@ -197,7 +203,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req BanFromChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
-			log.Println("Error: ", err)
+			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED})
 		}
 
@@ -213,7 +219,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 func Marshal(v interface{}) string {
 	s, err := json.Marshal(v)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Info.Println(err)
 		return ""
 	}
 	return string(s)

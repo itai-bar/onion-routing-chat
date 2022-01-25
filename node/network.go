@@ -2,7 +2,6 @@ package node
 
 import (
 	"bytes"
-	"log"
 	"net"
 	"torbasedchat/pkg/tor_server"
 )
@@ -17,7 +16,7 @@ import (
 func NetworkLogon(routerAddress string) bool {
 	routerConn, err := net.Dial("tcp", routerAddress)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return false
 	}
 
@@ -44,12 +43,12 @@ func NetworkLogon(routerAddress string) bool {
 func NetworkLogout(routerAddress string) {
 	routerConn, err := net.Dial("tcp", routerAddress)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
 	routerConn.Write([]byte(CODE_NODE_DIS))
 	routerConn.Close()
 
-	log.Println("Logged out from tor-network")
+	logger.Info.Println("Logged out from tor-network")
 }

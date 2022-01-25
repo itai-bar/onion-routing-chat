@@ -8,16 +8,16 @@ import (
 )
 
 type TorLogger struct {
-	info *log.Logger
-	err  *log.Logger
+	Info *log.Logger
+	Err  *log.Logger
 }
 
 // built mainly for a simpler mute on parts of the project
-func NewTorLogger(mute string) *TorLogger {
+func NewTorLogger(output string) *TorLogger {
 	var infoLogOut io.Writer
 	var errLogOut io.Writer
 
-	if mute == "1" {
+	if output == "0" {
 		infoLogOut, errLogOut = ioutil.Discard, ioutil.Discard // if user wanted no logs
 	} else {
 		infoLogOut, errLogOut = os.Stdout, os.Stderr

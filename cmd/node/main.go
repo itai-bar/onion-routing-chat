@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
+	"os"
 	"torbasedchat/node"
+	"torbasedchat/pkg/tor_logger"
 	"torbasedchat/pkg/tor_server"
 )
 
@@ -12,12 +13,13 @@ const (
 )
 
 func main() {
+	logger := tor_logger.NewTorLogger(os.Getenv("NODE_LOG"))
 	if node.NetworkLogon(ROUTER_IP) {
 		defer node.NetworkLogout(ROUTER_IP)
 
-		log.Println("Performed 'Network-Logon' with tor-network.")
-		tor_server.RunServer(SELF_IP, node.HandleClient)
+		logger.Info.Println("Performed 'Network-Logon' with tor-network.")
+		tor_server.RunServer(SELF_IP, node.HandleClient, logger)
 	} else {
-		log.Println("Couldn't perform 'Network-Logon' with tor-network.")
+		logger.Err.Println("Couldn't perform 'Network-Logon' with tor-network.")
 	}
 }

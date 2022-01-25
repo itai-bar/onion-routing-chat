@@ -1,9 +1,9 @@
 package tor_server
 
 import (
-	"log"
 	"net"
 	"strconv"
+	"torbasedchat/pkg/tor_logger"
 )
 
 // the servers has to make their handler like that
@@ -13,20 +13,20 @@ type ClientHandler func(net.Conn)
 	inits the server with an address and
 	waits for client to handle with the given client handler
 */
-func RunServer(address string, clientHandler ClientHandler) {
+func RunServer(address string, clientHandler ClientHandler, logger *tor_logger.TorLogger) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatal("Error in listening:\t", err)
+		logger.Err.Fatal("Error in listening:\t", err)
 	}
 	defer listener.Close() // will close the listener when the function exits
-	log.Println("Listening on:\t", address)
+	logger.Info.Println("Listening on:\t", address)
 
 	for {
 		conn, err := listener.Accept() // new client
 		if err != nil {
-			log.Fatal("Error on accepting client:\t", err)
+			logger.Err.Fatal("Error on accepting client:\t", err)
 		}
-		log.Println("New client:\t", conn.RemoteAddr().String())
+		logger.Info.Println("New client:\t", conn.RemoteAddr().String())
 
 		go clientHandler(conn) // new thread to handle the client
 	}

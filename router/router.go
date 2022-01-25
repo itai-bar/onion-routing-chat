@@ -2,12 +2,13 @@ package router
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
+	"torbasedchat/pkg/tor_logger"
 	"torbasedchat/pkg/tor_rsa"
 	"torbasedchat/pkg/tor_server"
 )
@@ -25,7 +26,10 @@ var network TorNetwork
 
 type TorNetwork map[string]struct{}
 
+var logger *tor_logger.TorLogger
+
 func init() {
+	logger = tor_logger.NewTorLogger(os.Getenv("ROUTER_LOG"))
 	network = make(TorNetwork)
 }
 
@@ -38,7 +42,7 @@ func init() {
 func HandleClient(conn net.Conn) {
 	msgCode, err := tor_server.ReadSize(conn, REQ_CODE_SIZE)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
@@ -48,18 +52,18 @@ func HandleClient(conn net.Conn) {
 
 	switch string(msgCode) {
 	case CODE_NODE_CONN:
-		log.Println("got a node connection req")
+		logger.Info.Println("got a node connection req")
 
 		ip := conn.RemoteAddr().String()
 		ip = ip[:strings.IndexByte(ip, ':')] //slice till the port without it
 		network[ip] = struct{}{}             // init en empty struct to the map
 		conn.Write([]byte("1"))              // "1" for true - it means joined successfully
 	case CODE_NODE_DIS:
-		log.Println("got a node disconnection req")
+		logger.Info.Println("got a node disconnection req")
 
 		delete(network, conn.RemoteAddr().String())
 	case CODE_ROUTE:
-		log.Println("got a client routing req")
+		logger.Info.Println("got a client routing req")
 
 		if len(network) >= 3 { // gotta have 3 nodes to send a 3 nodes route..
 			SendRoute(conn, network)
@@ -68,7 +72,7 @@ func HandleClient(conn net.Conn) {
 		}
 	default:
 		// TODO: send error msg to client
-		log.Println("invalid req code")
+		logger.Info.Println("invalid req code")
 		return
 	}
 }
@@ -113,19 +117,19 @@ func SendRoute(conn net.Conn, network TorNetwork) {
 	route := GenerateRoute(network)
 	allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
 	rsa_key, err := tor_rsa.NewRsaGivenPemPublicKey(allData)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
 	encrypted, err := rsa_key.Encrypt([]byte(strings.Join(route[:], "&")))
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 	paddedLen := fmt.Sprintf("%05d", len(encrypted))
@@ -142,9 +146,9 @@ func CheckNodes() {
 	for range time.Tick(time.Minute * 2) {
 		for node := range network {
 			if isAlive(node) {
-				log.Println(node + " is Alive")
+				logger.Info.Println(node + " is Alive")
 			} else {
-				log.Println(node + " is Dead")
+				logger.Info.Println(node + " is Dead")
 
 				networkLock.Lock()
 				delete(network, node)

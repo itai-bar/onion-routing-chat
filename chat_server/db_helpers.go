@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 )
 
 func (db *ChatDb) _deleteRoomMembers(roomName string, roomPassword string, adminID int) error {
@@ -140,7 +139,7 @@ func (db *ChatDb) _rowExists(query string, args ...interface{}) bool {
 	query = fmt.Sprintf("SELECT exists (%s)", query)
 	err := db.QueryRow(query, args...).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
-		log.Fatalf("error checking if row exists '%s' %v", args, err)
+		logger.Err.Fatalf("error checking if row exists '%s' %v", args, err)
 	}
 	return exists
 }

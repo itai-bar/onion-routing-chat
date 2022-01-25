@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"torbasedchat/pkg/tor_aes"
 	"torbasedchat/pkg/tor_rsa"
@@ -69,8 +68,6 @@ func Auth(conn net.Conn, pemKey []byte) (*Cookie, *tor_aes.Aes, error) {
 		return nil, nil, err
 	}
 
-	log.Println("got rsa key from client")
-
 	// adding the aes key and the cookie for the client
 	cookie := CreateCookie()
 
@@ -85,6 +82,6 @@ func Auth(conn net.Conn, pemKey []byte) (*Cookie, *tor_aes.Aes, error) {
 
 	conn.Write(buf)
 
-	log.Println("sent rsa encrypted cookie + aes key")
+	logger.Info.Printf("performed auth with new client ")
 	return cookie, aes, nil
 }

@@ -1,21 +1,18 @@
 package chat_server
 
-import "log"
-
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
 	// username must not be empty (thats how we check if a user is logged or not)
 	// TODO: if there any password requirements thats the place to add them..
 	if req.Username == "" {
-		log.Println("NO WAY", req.Username, req.Password)
 		return GeneralResponse{CODE_REGISTER, STATUS_FAILED}
 	}
 
 	ok, err := db.RegisterDB(req.Username, req.Password)
-	log.Println("got the register ans and it is : ", ok)
+	logger.Info.Println("got the register ans and it is : ", ok)
 
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return MakeErrorResponse("db error")
 	}
 
@@ -39,7 +36,7 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 	ok, err := db.CreateChatRoomDB(req.Name, req.Password, client.username)
 
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
 	}
 	if !ok {
@@ -49,7 +46,7 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 	// add admin to the chat db members
 	ok, err = db.JoinChatRoomDB(req.Name, req.Password, client.username, STATE_NORMAL)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
 	}
 	if !ok {
@@ -68,7 +65,7 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 	ok, err := db.DeleteChatRoomDB(req.Name, req.Password, client.username)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
 	}
 	if !ok {
@@ -85,7 +82,7 @@ func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state bool) interface{} {
 	ok, err := db.JoinChatRoomDB(req.Name, req.Password, client.username, state)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED}
 	}
 	if !ok {
@@ -102,7 +99,7 @@ func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state bool) interfac
 func KickFromChatRoom(req *KickFromChatRoomRequest, client *Client) interface{} {
 	ok, err := db.KickFromChatRoomDB(req.Name, req.Username, client.username)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 	if !ok {
@@ -119,7 +116,7 @@ func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
 	//in case that user not in room so we add him and change the state to STATE_BAN
 	ok, err := db.BanFromChatRoomDB(req.Name, req.Username, client.username)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 	if !ok {
