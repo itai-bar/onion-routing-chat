@@ -4,15 +4,20 @@ const (
 	STATUS_SUCCESS = 1
 	STATUS_FAILED  = 0
 
-	CODE_AUTH             = "00"
-	CODE_UPDATE           = "01"
-	CODE_LOGIN            = "02"
-	CODE_REGISTER         = "03"
-	CODE_LOGOUT           = "04"
-	CODE_CREATE_CHAT_ROOM = "05"
-	CODE_DELETE_CHAT_ROOM = "06"
-	CODE_JOIN_CHAT_ROOM   = "07"
-	CODE_ERR              = "11"
+	STATE_NORMAL	= false
+	STATE_BAN	 	= true
+
+	CODE_AUTH             	   = "00"
+	CODE_UPDATE           	   = "01"
+	CODE_LOGIN            	   = "02"
+	CODE_REGISTER         	   = "03"
+	CODE_LOGOUT           	   = "04"
+	CODE_CREATE_CHAT_ROOM 	   = "05"
+	CODE_DELETE_CHAT_ROOM 	   = "06"
+	CODE_JOIN_CHAT_ROOM   	   = "07"
+	CODE_KICK_FROM_CHAT_ROOM   = "08"
+	CODE_BAN_FROM_CHAT_ROOM	   = "09"
+	CODE_ERR              	   = "11"
 )
 
 type GeneralResponse struct {
@@ -43,6 +48,16 @@ type JoinChatRoomRequest struct {
 type DeleteChatRoomRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
+}
+
+type KickFromChatRoomRequest struct {
+	Username string `json:"username"`
+	Name	 string `json:"name"`
+}
+
+type BanFromChatRoomRequest struct {
+	Username string `json:"username"`
+	Name	 string `json:"name"`
 }
 
 type ErrorResponse struct {

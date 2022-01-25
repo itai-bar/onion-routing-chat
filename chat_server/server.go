@@ -183,7 +183,25 @@ func HandleRequests(code string, data []byte, client *Client) string {
 			return Marshal(GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED})
 		}
 
-		resp = JoinChatRoom(&req, client)
+		resp = JoinChatRoom(&req, client, STATE_NORMAL)
+	case CODE_KICK_FROM_CHAT_ROOM:
+		var req KickFromChatRoomRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			log.Println("Error: ", err)
+			return Marshal(GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED})
+		}
+
+		resp = KickFromChatRoom(&req, client)
+	case CODE_BAN_FROM_CHAT_ROOM:
+		var req BanFromChatRoomRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			log.Println("Error: ", err)
+			return Marshal(GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED})
+		}
+
+		resp = BanFromChatRoom(&req, client)
 	default:
 		resp = MakeErrorResponse("undefined request")
 	}

@@ -8,15 +8,17 @@ import sys
 
 COOKIE_SIZE = 15
 REQ_CODE_SIZE = 2
-CODE_AUTH             = b"00"
-CODE_UPDATE           = b"01"
-CODE_LOGIN            = b"02"
-CODE_REGISTER         = b"03"
-CODE_LOGOUT           = b"04"
-CODE_CREATE_CHAT_ROOM = b"05"
-CODE_DELETE_CHAT_ROOM = b"06"
-CODE_JOIN_CHAT_ROOM   = b"07"
-CODE_ERR              = b"11"
+CODE_AUTH             	   = b"00"
+CODE_UPDATE           	   = b"01"
+CODE_LOGIN            	   = b"02"
+CODE_REGISTER         	   = b"03"
+CODE_LOGOUT           	   = b"04"
+CODE_CREATE_CHAT_ROOM 	   = b"05"
+CODE_DELETE_CHAT_ROOM 	   = b"06"
+CODE_JOIN_CHAT_ROOM   	   = b"07"
+CODE_KICK_FROM_CHAT_ROOM   = b"08"
+CODE_BAN_FROM_CHAT_ROOM	   = b"09"
+CODE_ERR              	   = b"11"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
 

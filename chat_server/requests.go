@@ -47,7 +47,7 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 	}
 
 	// add admin to the chat db members
-	ok, err = db.JoinChatRoomDB(req.Name, req.Password, client.username)
+	ok, err = db.JoinChatRoomDB(req.Name, req.Password, client.username, STATE_NORMAL)
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED}
@@ -82,8 +82,8 @@ func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 	return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_SUCCESS}
 }
 
-func JoinChatRoom(req *JoinChatRoomRequest, client *Client) interface{} {
-	ok, err := db.JoinChatRoomDB(req.Name, req.Password, client.username)
+func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state bool) interface{} {
+	ok, err := db.JoinChatRoomDB(req.Name, req.Password, client.username, state)
 	if err != nil {
 		log.Println("ERROR: ", err)
 		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED}
@@ -97,4 +97,37 @@ func JoinChatRoom(req *JoinChatRoomRequest, client *Client) interface{} {
 	chatRoomsMx.Unlock()
 
 	return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_SUCCESS}
+}
+
+func KickFromChatRoom(req *KickFromChatRoomRequest, client *Client) interface{} {
+	ok, err := db.KickFromChatRoomDB(req.Name, req.Username, client.username)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+	if !ok {
+		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	chatRoomsMx.Lock()
+	//TODO:remove req.Username from charRooms[req.Name].onlineMembers
+	chatRoomsMx.Unlock()
+	return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_SUCCESS}
+}
+
+func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
+	//in case that user not in room so we add him and change the state to STATE_BAN
+	ok, err := db.BanFromChatRoomDB(req.Name, req.Username, client.username)
+	if err != nil {
+		log.Println("ERROR: ", err)
+		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+	if !ok {
+		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	chatRoomsMx.Lock()
+	//TODO:in case that user already at room so remove req.Username from charRooms[req.Name].onlineMembers
+	chatRoomsMx.Unlock()
+	return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_SUCCESS}
 }
