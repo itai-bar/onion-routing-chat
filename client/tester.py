@@ -56,17 +56,26 @@ class Tester:
         req = { 'username' : username, 'password' : password }
         return self._send_req(CODE_LOGIN, req)
     
-    def create_room(self, name, password) -> dict:
-        req = { 'name' : name, 'password' : password}
+    def create_room(self, room_name, password) -> dict:
+        req = { 'name' : room_name, 'password' : password}
         return self._send_req(CODE_CREATE_CHAT_ROOM, req)
     
-    def delete_room(self, name, password) -> dict:
-        req = { 'name' : name, 'password' : password}
+    def delete_room(self, room_name, password) -> dict:
+        req = { 'name' : room_name, 'password' : password}
         return self._send_req(CODE_DELETE_CHAT_ROOM, req)
     
     def join_room(self, room_name, password) -> dict:
         req = { 'name' : room_name, 'password' : password }
         return self._send_req(CODE_JOIN_CHAT_ROOM, req)
+
+    def kick_user(self, room_name, username) -> dict:
+        req = { 'name' : room_name, 'username' : username }
+        return self._send_req(CODE_KICK_FROM_CHAT_ROOM, req)
+
+    def ban_user(self, room_name, username) -> dict:
+        req = { 'name' : room_name, 'username' : username }
+        return self._send_req(CODE_BAN_FROM_CHAT_ROOM, req)
+
 
 def load_RSA_from_file(path_to_keys):
     with open(path_to_keys, 'rb') as in_file:
@@ -102,4 +111,10 @@ if __name__ == '__main__':
     assert tester_itai.join_room('my_room', 'wrong_pass')['status'] == STATUS_FAILED
     assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
     assert tester_itai.delete_room('my_room', 'room_pass')['status'] == STATUS_FAILED
+
+    assert tester_tal.kick_user('my_room', 'itai')['status'] == STATUS_SUCCESS
+    assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
+
+    assert tester_tal.ban_user('my_room', 'itai')['status'] == STATUS_SUCCESS
+    assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_FAILED
     

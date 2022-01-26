@@ -23,8 +23,13 @@ func NewTorLogger(output string) *TorLogger {
 		infoLogOut, errLogOut = os.Stdout, os.Stderr
 	}
 
-	infoLog := log.New(infoLogOut, "[info] ", log.Ldate|log.Ltime)
-	errLog := log.New(errLogOut, "[error] ", log.Ldate|log.Ltime|log.Llongfile)
+	// useful.
+	colorRed := string("\033[31m")
+	colorGreen := string("\033[32m")
+	colorWhite := string("\033[37m")
+
+	infoLog := log.New(infoLogOut, colorGreen+"[info] "+colorWhite, log.Ldate|log.Ltime)
+	errLog := log.New(errLogOut, colorRed+"[error] "+colorWhite, log.Ldate|log.Ltime|log.Llongfile)
 
 	return &TorLogger{infoLog, errLog}
 }

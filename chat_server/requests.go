@@ -106,9 +106,8 @@ func KickFromChatRoom(req *KickFromChatRoomRequest, client *Client) interface{} 
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	// chatRoomsMx.Lock()
-	//TODO:remove req.Username from charRooms[req.Name].onlineMembers
-	// chatRoomsMx.Unlock()
+	RemoveMemberFromChat(req.Name, client.username)
+
 	return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_SUCCESS}
 }
 
@@ -123,8 +122,21 @@ func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	// chatRoomsMx.Lock()
-	//TODO:in case that user already at room so remove req.Username from charRooms[req.Name].onlineMembers
-	// chatRoomsMx.Unlock()
+	RemoveMemberFromChat(req.Name, client.username)
+
 	return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_SUCCESS}
+}
+
+func RemoveMemberFromChat(roomName string, username string) {
+	chatRoomsMx.Lock()
+
+	for i, v := range chatRooms[roomName].onlineMembers {
+		if v.username == username {
+			// removing the username by appending without it
+			chatRooms[roomName].onlineMembers = append(chatRooms[roomName].onlineMembers[:i],
+				chatRooms[roomName].onlineMembers[i+1:]...)
+		}
+	}
+
+	chatRoomsMx.Unlock()
 }
