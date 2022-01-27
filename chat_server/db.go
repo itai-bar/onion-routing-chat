@@ -42,7 +42,7 @@ func InitDb(path string) (*sql.DB, error) {
 			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
 			name	 	TEXT NOT NULL UNIQUE,
 			password 	TEXT NOT NULL,
-			adminID		INTEGER,
+			adminID		INTEGER NOT NULL,
 			FOREIGN KEY(adminID) REFERENCES users(ID)
 		);
 	`
@@ -56,15 +56,15 @@ func InitDb(path string) (*sql.DB, error) {
 	// 		0 - a room member
 	//		1 - banned from the room by an admin
 
-	// TODO: ask tal if userID should be unique
 	sqlStmt = `
 		CREATE TABLE IF NOT EXISTS chats_members(
 			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-			userID	 	TEXT NOT NULL UNIQUE, 
+			userID	 	TEXT NOT NULL, 
 			chatID	 	TEXT NOT NULL,
-			state		INTEGER,
+			state		INTEGER NOT NULL,
 			FOREIGN KEY(userID) REFERENCES users(ID),
-			FOREIGN KEY(chatID) REFERENCES chats(ID)
+			FOREIGN KEY(chatID) REFERENCES chats(ID),
+			CONSTRAINT room_member UNIQUE (userID, chatID)
 		);
 	`
 
@@ -149,7 +149,6 @@ func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminNa
 }
 
 func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
-	db._saveCurrentState() // in case of error we don't want data to get harm
 	adminID, err := db._getUserID(adminName)
 	if err != nil || adminID == WITHOUT_ID {
 		return false, err
@@ -163,36 +162,37 @@ func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminNa
 
 	err = db._deleteRoomMembers(roomName, roomPassword, adminID)
 	if err != nil {
-		db._revertChanges()
 		return false, err
 	}
 
 	err = db._deleteRoom(roomName, roomPassword, adminID)
 	if err != nil {
-		db._revertChanges()
 		return false, err
 	}
-
-	db._saveChanges() // in case if success we want to save changes
 
 	return true, nil
 }
 
-func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username string, banState bool) (bool, error) {
+func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username string, banState int) (bool, error) {
 	// using the userID in db
 	userId, err := db._getUserID(username)
 	if err != nil || userId == WITHOUT_ID {
 		return false, err
 	}
 
-	// using the the roomId in db
-	roomId, err := db._getChatRoomID(roomName)
-	if err != nil || roomId == WITHOUT_ID {
+	// using the the chatID in db
+	chatID, err := db._getChatRoomID(roomName)
+	if err != nil || chatID == WITHOUT_ID {
 		return false, err
 	}
 
+	if db._isUserInBan(userId, chatID) {
+		logger.Info.Println("user:", username, " in ban")
+		return false, nil
+	}
+
 	// password has to match or giving ban
-	if !db.CheckChatRoomPassword(roomName, roomPassword) && !banState {
+	if !db.CheckChatRoomPassword(roomName, roomPassword) && banState == 0 {
 		return false, nil
 	}
 
@@ -200,7 +200,7 @@ func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username 
 		INSERT INTO chats_members ( userID, chatID, state ) VALUES ( ?, ?, ? );
 	`
 
-	err = db._execNoneResponseQuery(sql, userId, roomId, banState)
+	err = db._execNoneResponseQuery(sql, userId, chatID, banState)
 	if err != nil {
 		return false, err
 	}
@@ -232,7 +232,6 @@ func (db *ChatDb) KickFromChatRoomDB(roomName string, username string, adminName
 		return false, err
 	}
 	return true, nil
-	//TODO: remove user from online members in specific room
 }
 
 func (db *ChatDb) BanFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {
@@ -268,7 +267,6 @@ func (db *ChatDb) BanFromChatRoomDB(roomName string, username string, adminName 
 	} else {
 		return db.JoinChatRoomDB(roomName, "", username, STATE_BAN)
 	}
-	//TODO: remove user from online members in specific room
 }
 
 func (db *ChatDb) UnBanFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {

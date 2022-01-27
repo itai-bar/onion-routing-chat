@@ -112,6 +112,10 @@ func (db *ChatDb) _isUserInRoom(roomName string, username string) (bool, error) 
 	return true, nil
 }
 
+func (db *ChatDb) _isUserInBan(userID int, chatID int) bool {
+	return db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1", userID, chatID)
+}
+
 func (db *ChatDb) _saveCurrentState() error {
 	sql := `
 		BEGIN TRANSACTION;

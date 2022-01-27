@@ -79,7 +79,7 @@ func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 	return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_SUCCESS}
 }
 
-func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state bool) interface{} {
+func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state int) interface{} {
 	ok, err := db.JoinChatRoomDB(req.Name, req.Password, client.username, state)
 	if err != nil {
 		logger.Err.Println(err)
@@ -106,7 +106,7 @@ func KickFromChatRoom(req *KickFromChatRoomRequest, client *Client) interface{} 
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	RemoveMemberFromChat(req.Name, client.username)
+	RemoveMemberFromChat(req.Name, req.Username)
 
 	return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_SUCCESS}
 }
@@ -122,7 +122,7 @@ func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	RemoveMemberFromChat(req.Name, client.username)
+	RemoveMemberFromChat(req.Name, req.Username)
 
 	return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_SUCCESS}
 }

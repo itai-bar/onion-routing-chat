@@ -4,8 +4,8 @@ const (
 	STATUS_SUCCESS = 1
 	STATUS_FAILED  = 0
 
-	STATE_NORMAL	= false
-	STATE_BAN	 	= true
+	STATE_NORMAL	= 0
+	STATE_BAN	 	= 1
 
 	CODE_AUTH             	   = "00"
 	CODE_UPDATE           	   = "01"

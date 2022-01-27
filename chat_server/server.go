@@ -142,11 +142,13 @@ func HandleRequests(code string, data []byte, client *Client) string {
 	}
 
 	// TODO: find a shorter way to do this with only one unmarshal call..
+	db._saveCurrentState()
 	switch code {
 	case CODE_REGISTER:
 		var req RegisterRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_REGISTER, STATUS_FAILED})
 		}
@@ -157,6 +159,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req LoginRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_LOGIN, STATUS_FAILED})
 		}
@@ -167,6 +170,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req CreateChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED})
 		}
@@ -176,6 +180,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req DeleteChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED})
 		}
@@ -185,6 +190,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req JoinChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED})
 		}
@@ -194,6 +200,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req KickFromChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED})
 		}
@@ -203,6 +210,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		var req BanFromChatRoomRequest
 		err := json.Unmarshal(data, &req)
 		if err != nil {
+			db._revertChanges()
 			logger.Info.Println(err)
 			return Marshal(GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED})
 		}
@@ -211,7 +219,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 	default:
 		resp = MakeErrorResponse("undefined request")
 	}
-
+	db._saveChanges()
 	return Marshal(resp)
 }
 
