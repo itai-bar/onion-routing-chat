@@ -73,6 +73,24 @@ func InitDb(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
+
+	sqlStmt = `
+		CREATE TABLE IF NOT EXISTS messages(
+			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+			senderID 	INTEGER NOT NULL, 
+			chatID	 	INTEGER NOT NULL,
+			content		TEXT NOT NULL,
+			time		TIME NOT NULL,
+			FOREIGN KEY(senderID) REFERENCES users(ID),
+			FOREIGN KEY(chatID) REFERENCES chats(ID)
+		);
+	`
+
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
 
