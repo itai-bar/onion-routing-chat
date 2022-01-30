@@ -6,6 +6,27 @@ import (
 	"fmt"
 )
 
+func (db *ChatDb) _deleteRoomMessages(roomName string, roomPassword string, adminID int) error {
+	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
+		return errors.New("wrong credentials, can't delete room messages") // not all credentials are right
+	}
+
+	chatID, err := db._getChatRoomID(roomName)
+	if err != nil || chatID == WITHOUT_ID {
+		return err
+	}
+
+	sql := `
+		DELETE FROM messages WHERE chatID = ?;
+	`
+	
+	err = db._execNoneResponseQuery(sql, chatID)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
 func (db *ChatDb) _deleteRoomMembers(roomName string, roomPassword string, adminID int) error {
 	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
 		return errors.New("wrong credentials, can't delete room members") // not all credentials are right

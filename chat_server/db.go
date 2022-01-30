@@ -176,7 +176,10 @@ func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminNa
 		return false, err // not all credentials are right
 	}
 
-	//TODO: delete from messages TABLE, messages that related to deleted chat room
+	err = db._deleteRoomMessages(roomName, roomPassword, adminID) //TODO: test this function
+	if err != nil {
+		return false, err
+	}
 
 	err = db._deleteRoomMembers(roomName, roomPassword, adminID)
 	if err != nil {
