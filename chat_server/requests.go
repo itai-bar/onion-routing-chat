@@ -141,6 +141,15 @@ func UnBanFromChatRoom(req *UnBanFromChatRoomRequest, client *Client) interface{
 }
 
 func SendMessage(req *SendMessageRequest, client *Client) interface{} {
+	if inRoom, err := db._isUserInRoom(req.Room, client.username); err != nil || !inRoom {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
+	}
+	if inBan, err := db._isUserInBan(req.Room, client.username); err != nil || inBan {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
+	}
+
 	ok, err := db.SendMessageDB(req.Content, req.Room, client.username)
 	if err != nil {
 		logger.Err.Println(err)

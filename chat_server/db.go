@@ -94,16 +94,6 @@ func InitDb(path string) (*sql.DB, error) {
 }
 
 func (db *ChatDb) SendMessageDB(content string, roomName string, senderName string) (bool, error) {
-	// 1. check if user in room CHECK
-	// 2. check if user isnt banned from room CHECK
-	// 3. write message to db message
-	if inRoom, err := db._isUserInRoom(roomName, senderName); err != nil || !inRoom {
-		return false, err
-	}
-	if inBan, err := db._isUserInBan(roomName, senderName); err != nil || inBan {
-		return false, err
-	}
-
 	sql := `
 		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, datetime('now') );
 	`
