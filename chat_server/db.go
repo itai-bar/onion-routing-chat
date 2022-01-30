@@ -73,7 +73,6 @@ func InitDb(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
-
 	sqlStmt = `
 		CREATE TABLE IF NOT EXISTS messages(
 			ID 			INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -92,6 +91,32 @@ func InitDb(path string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func (db *ChatDb) SendMessageDB(content string, roomName string, senderName string) (bool, error) {
+	// 1. check if user in room CHECK
+	// 2. check if user isnt banned from room CHECK
+	// 3. write message to db message
+	if inRoom, err := db._isUserInRoom(roomName, senderName); err != nil || !inRoom {
+		return false, err
+	}
+	if inBan, err := db._isUserInBan(roomName, senderName); err != nil || inBan {
+		return false, err
+	}
+
+	sql := `
+		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, datetime('now') );
+	`
+
+	userID, _ := db._getUserID(senderName)
+	chatID, _ := db._getChatRoomID(roomName)
+
+	err := db._execNoneResponseQuery(sql, userID, chatID, content)
+	if err != nil {
+		return false, err
+	}
+
+	return true, err
 }
 
 /*
@@ -207,7 +232,7 @@ func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username 
 		return false, err
 	}
 
-	if db._isUserInBan(userId, chatID) {
+	if inBan, err := db._isUserInBan(roomName, username); err != nil || inBan {
 		logger.Info.Println("user:", username, " in ban")
 		return false, nil
 	}

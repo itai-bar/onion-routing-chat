@@ -141,91 +141,80 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		}
 	}
 
-	// TODO: find a shorter way to do this with only one unmarshal call..
 	db._saveCurrentState()
 	switch code {
 	case CODE_REGISTER:
 		var req RegisterRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_REGISTER, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = Register(&req)
 
 	case CODE_LOGIN:
 		var req LoginRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_LOGIN, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = Login(&req, client)
 
 	case CODE_CREATE_CHAT_ROOM:
 		var req CreateChatRoomRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = CreateChatRoom(&req, client)
+
 	case CODE_DELETE_CHAT_ROOM:
 		var req DeleteChatRoomRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = DeleteChatRoom(&req, client)
+
 	case CODE_JOIN_CHAT_ROOM:
 		var req JoinChatRoomRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = JoinChatRoom(&req, client, STATE_NORMAL)
+
 	case CODE_KICK_FROM_CHAT_ROOM:
 		var req KickFromChatRoomRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = KickFromChatRoom(&req, client)
+
 	case CODE_BAN_FROM_CHAT_ROOM:
 		var req BanFromChatRoomRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
 
 		resp = BanFromChatRoom(&req, client)
+
 	case CODE_UNBAN_FROM_CHAT_ROOM:
 		var req UnBanFromChatRoomRequest
-		err := json.Unmarshal(data, &req)
-		if err != nil {
-			db._revertChanges()
-			logger.Info.Println(err)
-			return Marshal(GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED})
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
 		}
-		
+
 		resp = UnBanFromChatRoom(&req, client)
+
+	case CODE_SEND_MESSAGE:
+		var req SendMessageRequest
+		if errMsg := Unmarshal(CODE_SEND_MESSAGE, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = SendMessage(&req, client)
+
 	default:
 		resp = MakeErrorResponse("undefined request")
 	}
@@ -241,4 +230,14 @@ func Marshal(v interface{}) string {
 		return ""
 	}
 	return string(s)
+}
+
+func Unmarshal(code string, data []byte, v interface{}) string {
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		db._revertChanges()
+		logger.Info.Println(err)
+		return Marshal(GeneralResponse{code, STATUS_FAILED})
+	}
+	return ""
 }

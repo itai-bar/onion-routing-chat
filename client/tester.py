@@ -9,18 +9,19 @@ import sys
 
 COOKIE_SIZE = 15
 REQ_CODE_SIZE = 2
-CODE_AUTH             	   = b"00"
-CODE_UPDATE           	   = b"01"
-CODE_LOGIN            	   = b"02"
-CODE_REGISTER         	   = b"03"
-CODE_LOGOUT           	   = b"04"
-CODE_CREATE_CHAT_ROOM 	   = b"05"
-CODE_DELETE_CHAT_ROOM 	   = b"06"
-CODE_JOIN_CHAT_ROOM   	   = b"07"
-CODE_KICK_FROM_CHAT_ROOM   = b"08"
-CODE_BAN_FROM_CHAT_ROOM	   = b"09"
-CODE_UNBAN_FROM_CHAT_ROOM  = b"10"
-CODE_ERR              	   = b"99"
+CODE_AUTH                 = b"00"
+CODE_UPDATE               = b"01"
+CODE_LOGIN                = b"02"
+CODE_REGISTER             = b"03"
+CODE_LOGOUT               = b"04"
+CODE_CREATE_CHAT_ROOM     = b"05"
+CODE_DELETE_CHAT_ROOM     = b"06"
+CODE_JOIN_CHAT_ROOM       = b"07"
+CODE_KICK_FROM_CHAT_ROOM  = b"08"
+CODE_BAN_FROM_CHAT_ROOM   = b"09"
+CODE_UNBAN_FROM_CHAT_ROOM = b"10"
+CODE_SEND_MESSAGE         = b"11"
+CODE_ERR                  = b"99"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
 
@@ -81,6 +82,10 @@ class Tester:
     def unban_user(self, room_name, username) -> dict:
         req = { 'name' : room_name, 'username' : username }
         return self._send_req(CODE_UNBAN_FROM_CHAT_ROOM, req)
+    
+    def send_message(self, room_name, content) -> dict:
+        req = { 'room' : room_name, 'content': content }
+        return self._send_req(CODE_SEND_MESSAGE, req)
 
 
 def load_RSA_from_file(path_to_keys):
@@ -138,4 +143,8 @@ if __name__ == '__main__':
     assert tester_itai.create_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
     assert tester_dan.join_room("my_room", "room_pass")['status'] == STATUS_FAILED
     assert tester_dan.join_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
+
+    
+    msg = 'this is the first every message sent by torchat'
+    assert tester_tal.send_message('my_room', msg)['status'] == STATUS_SUCCESS
     

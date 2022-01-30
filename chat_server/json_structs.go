@@ -4,21 +4,22 @@ const (
 	STATUS_SUCCESS = 1
 	STATUS_FAILED  = 0
 
-	STATE_NORMAL	= 0
-	STATE_BAN	 	= 1
+	STATE_NORMAL = 0
+	STATE_BAN    = 1
 
-	CODE_AUTH             	   = "00"
-	CODE_UPDATE           	   = "01"
-	CODE_LOGIN            	   = "02"
-	CODE_REGISTER         	   = "03"
-	CODE_LOGOUT           	   = "04"
-	CODE_CREATE_CHAT_ROOM 	   = "05"
-	CODE_DELETE_CHAT_ROOM 	   = "06"
-	CODE_JOIN_CHAT_ROOM   	   = "07"
-	CODE_KICK_FROM_CHAT_ROOM   = "08"
-	CODE_BAN_FROM_CHAT_ROOM	   = "09"
-	CODE_UNBAN_FROM_CHAT_ROOM  = "10"
-	CODE_ERR              	   = "99"
+	CODE_AUTH                 = "00"
+	CODE_UPDATE               = "01"
+	CODE_LOGIN                = "02"
+	CODE_REGISTER             = "03"
+	CODE_LOGOUT               = "04"
+	CODE_CREATE_CHAT_ROOM     = "05"
+	CODE_DELETE_CHAT_ROOM     = "06"
+	CODE_JOIN_CHAT_ROOM       = "07"
+	CODE_KICK_FROM_CHAT_ROOM  = "08"
+	CODE_BAN_FROM_CHAT_ROOM   = "09"
+	CODE_UNBAN_FROM_CHAT_ROOM = "10"
+	CODE_SEND_MESSAGE         = "11"
+	CODE_ERR                  = "99"
 )
 
 type GeneralResponse struct {
@@ -53,17 +54,22 @@ type DeleteChatRoomRequest struct {
 
 type KickFromChatRoomRequest struct {
 	Username string `json:"username"`
-	Name	 string `json:"name"`
+	Name     string `json:"name"`
 }
 
 type BanFromChatRoomRequest struct {
 	Username string `json:"username"`
-	Name	 string `json:"name"`
+	Name     string `json:"name"`
 }
 
 type UnBanFromChatRoomRequest struct {
 	Username string `json:"username"`
-	Name	 string `json:"name"`
+	Name     string `json:"name"`
+}
+
+type SendMessageRequest struct {
+	Content string `json:"content"`
+	Room    string `json:"room"`
 }
 
 type ErrorResponse struct {

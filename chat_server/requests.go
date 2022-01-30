@@ -140,6 +140,21 @@ func UnBanFromChatRoom(req *UnBanFromChatRoomRequest, client *Client) interface{
 	return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_SUCCESS}
 }
 
+func SendMessage(req *SendMessageRequest, client *Client) interface{} {
+	ok, err := db.SendMessageDB(req.Content, req.Room, client.username)
+	if err != nil {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
+	}
+	if !ok {
+		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
+	}
+
+	// TODO: walk through all client in chosen room and update them about the message!
+
+	return GeneralResponse{CODE_SEND_MESSAGE, STATUS_SUCCESS}
+}
+
 func RemoveMemberFromChat(roomName string, username string) {
 	chatRoomsMx.Lock()
 

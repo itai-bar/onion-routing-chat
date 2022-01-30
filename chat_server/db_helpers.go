@@ -19,12 +19,12 @@ func (db *ChatDb) _deleteRoomMessages(roomName string, roomPassword string, admi
 	sql := `
 		DELETE FROM messages WHERE chatID = ?;
 	`
-	
+
 	err = db._execNoneResponseQuery(sql, chatID)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 func (db *ChatDb) _deleteRoomMembers(roomName string, roomPassword string, adminID int) error {
@@ -133,8 +133,19 @@ func (db *ChatDb) _isUserInRoom(roomName string, username string) (bool, error) 
 	return true, nil
 }
 
-func (db *ChatDb) _isUserInBan(userID int, chatID int) bool {
-	return db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1", userID, chatID)
+func (db *ChatDb) _isUserInBan(roomName string, username string) (bool, error) {
+	userID, err := db._getUserID(username)
+	if err != nil || userID == WITHOUT_ID {
+		return false, err
+	}
+
+	chatID, err := db._getChatRoomID(roomName)
+	if err != nil || chatID == WITHOUT_ID {
+		return false, err // room not exists
+	}
+
+	return db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1",
+		userID, chatID), err
 }
 
 func (db *ChatDb) _saveCurrentState() error {
