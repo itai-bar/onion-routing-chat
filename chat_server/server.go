@@ -216,6 +216,16 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		}
 
 		resp = BanFromChatRoom(&req, client)
+	case CODE_UNBAN_FROM_CHAT_ROOM:
+		var req UnBanFromChatRoomRequest
+		err := json.Unmarshal(data, &req)
+		if err != nil {
+			db._revertChanges()
+			logger.Info.Println(err)
+			return Marshal(GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED})
+		}
+		
+		resp = UnBanFromChatRoom(&req, client)
 	default:
 		resp = MakeErrorResponse("undefined request")
 	}

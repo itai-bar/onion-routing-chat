@@ -19,7 +19,8 @@ CODE_DELETE_CHAT_ROOM 	   = b"06"
 CODE_JOIN_CHAT_ROOM   	   = b"07"
 CODE_KICK_FROM_CHAT_ROOM   = b"08"
 CODE_BAN_FROM_CHAT_ROOM	   = b"09"
-CODE_ERR              	   = b"11"
+CODE_UNBAN_FROM_CHAT_ROOM  = b"10"
+CODE_ERR              	   = b"99"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
 
@@ -77,6 +78,10 @@ class Tester:
         req = { 'name' : room_name, 'username' : username }
         return self._send_req(CODE_BAN_FROM_CHAT_ROOM, req)
 
+    def unban_user(self, room_name, username) -> dict:
+        req = { 'name' : room_name, 'username' : username }
+        return self._send_req(CODE_UNBAN_FROM_CHAT_ROOM, req)
+
 
 def load_RSA_from_file(path_to_keys):
     with open(path_to_keys, 'rb') as in_file:
@@ -121,6 +126,10 @@ if __name__ == '__main__':
 
     assert tester_tal.ban_user('my_room', 'itai')['status'] == STATUS_SUCCESS
     assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_FAILED
+    assert tester_itai.unban_user('my_room', 'itai')['status'] == STATUS_FAILED
+    assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_FAILED
+    assert tester_tal.unban_user('my_room', 'itai')['status'] == STATUS_SUCCESS
+    assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
 
     assert tester_dan.login('dandan', '123')['status'] == STATUS_FAILED
     assert tester_dan.register('dandan', 'heyhey')['status'] == STATUS_SUCCESS

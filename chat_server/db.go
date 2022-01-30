@@ -270,9 +270,36 @@ func (db *ChatDb) BanFromChatRoomDB(roomName string, username string, adminName 
 }
 
 func (db *ChatDb) UnBanFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {
-	//TODO:check if the admin make the action
-	//in case that user not in room so we add him to room and change the state to STATE_BAN
-	//TODO: remove user from online members in specific room
+	adminID, err := db._getUserID(adminName)
+	if err != nil || adminID == WITHOUT_ID {
+		return false, err
+	}
+
+	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND adminID = ?", roomName, adminID) {
+		return false, err // not all credentials are right
+	}
+
+	userID, err := db._getUserID(username)
+	if err != nil || userID == WITHOUT_ID {
+		return false, err // check if user exists
+	}
+
+	chatID, err := db._getChatRoomID(roomName)
+	if err != nil || chatID == WITHOUT_ID {
+		return false, err // check if room exists
+	}
+
+	if !db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1", userID, chatID) {
+		return false, err //user not in ban
+	}
+
+	sql := `
+		DELETE FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1;
+	`
+	err = db._execNoneResponseQuery(sql, userID, chatID)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

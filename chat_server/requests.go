@@ -127,6 +127,19 @@ func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
 	return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_SUCCESS}
 }
 
+func UnBanFromChatRoom(req *UnBanFromChatRoomRequest, client *Client) interface{} {
+	ok, err := db.UnBanFromChatRoomDB(req.Name, req.Username, client.username)
+	if err != nil {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+	if !ok {
+		return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_SUCCESS}
+}
+
 func RemoveMemberFromChat(roomName string, username string) {
 	chatRoomsMx.Lock()
 

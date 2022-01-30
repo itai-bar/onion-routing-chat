@@ -17,7 +17,8 @@ const (
 	CODE_JOIN_CHAT_ROOM   	   = "07"
 	CODE_KICK_FROM_CHAT_ROOM   = "08"
 	CODE_BAN_FROM_CHAT_ROOM	   = "09"
-	CODE_ERR              	   = "11"
+	CODE_UNBAN_FROM_CHAT_ROOM  = "10"
+	CODE_ERR              	   = "99"
 )
 
 type GeneralResponse struct {
@@ -56,6 +57,11 @@ type KickFromChatRoomRequest struct {
 }
 
 type BanFromChatRoomRequest struct {
+	Username string `json:"username"`
+	Name	 string `json:"name"`
+}
+
+type UnBanFromChatRoomRequest struct {
 	Username string `json:"username"`
 	Name	 string `json:"name"`
 }
