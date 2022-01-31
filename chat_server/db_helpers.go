@@ -88,7 +88,7 @@ func (db *ChatDb) _isAdminOfRoom(roomID int, userID int) bool {
 }
 
 func (db *ChatDb) _isUserInRoom(roomID int, userID int) bool {
-	return db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ?", userID, roomID)
+	return db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ? AND state = 0", userID, roomID)
 }
 
 func (db *ChatDb) _isUserInBan(roomID int, userID int) bool {
