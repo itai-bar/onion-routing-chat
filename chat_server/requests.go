@@ -2,9 +2,7 @@ package chat_server
 
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
-	// username must not be empty (thats how we check if a user is logged or not)
-	// TODO: if there any password requirements thats the place to add them..
-	if req.Username == "" {
+	if req.Username == "" || !isValidPassword(req.Password) {
 		return GeneralResponse{CODE_REGISTER, STATUS_FAILED}
 	}
 
