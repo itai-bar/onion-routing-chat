@@ -228,11 +228,6 @@ func (db *ChatDb) KickFromChatRoomDB(roomID int, userID int, adminID int) (bool,
 }
 
 func (db *ChatDb) BanFromChatRoomDB(roomID int, userID int, adminID int) (bool, error) {
-	isAdmin := db._isAdminOfRoom(roomID, adminID)
-	if !isAdmin {
-		return false, nil
-	}
-
 	isUserInRoom := db._isUserInRoom(roomID, userID)
 
 	sql := `
@@ -250,10 +245,6 @@ func (db *ChatDb) BanFromChatRoomDB(roomID int, userID int, adminID int) (bool, 
 }
 
 func (db *ChatDb) UnBanFromChatRoomDB(roomID int, userID int, adminID int) (bool, error) {
-	if !db._isAdminOfRoom(roomID, adminID) {
-		return false, nil // not all credentials are right
-	}
-
 	if !db._isUserInBan(roomID, userID) {
 		return false, nil //user not in ban
 	}

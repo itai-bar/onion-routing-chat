@@ -2,15 +2,10 @@ package chat_server
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 )
 
 func (db *ChatDb) _deleteRoomMessages(roomID int, roomPassword string, adminID int) error {
-	if !db._rowExists("SELECT * FROM chats WHERE ID = ? AND password = ? AND adminID = ?", roomID, roomPassword, adminID) {
-		return errors.New("wrong credentials, can't delete room messages") // not all credentials are right
-	}
-
 	sql := `
 		DELETE FROM messages WHERE chatID = ?;
 	`
@@ -23,10 +18,6 @@ func (db *ChatDb) _deleteRoomMessages(roomID int, roomPassword string, adminID i
 	return nil
 }
 func (db *ChatDb) _deleteRoomMembers(roomID int, roomPassword string, adminID int) error {
-	if !db._rowExists("SELECT * FROM chats WHERE ID = ? AND password = ? AND adminID = ?", roomID, roomPassword, adminID) {
-		return errors.New("wrong credentials, can't delete room members") // not all credentials are right
-	}
-
 	sql := `
 		DELETE FROM chats_members WHERE chatID = ?
 	`
@@ -55,7 +46,7 @@ func (db *ChatDb) _execNoneResponseQuery(query string, args ...interface{}) erro
 
 func (db *ChatDb) _deleteRoom(roomID int, roomPassword string, adminID int) error {
 	sql := `
-		DELETE FROM chats WHERE name = ? AND password = ? AND adminID = ?;
+		DELETE FROM chats WHERE ID = ? AND password = ? AND adminID = ?;
 	`
 	err := db._execNoneResponseQuery(sql, roomID, roomPassword, adminID)
 	if err != nil {

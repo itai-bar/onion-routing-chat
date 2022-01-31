@@ -79,9 +79,14 @@ func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	adminID, err := db._getChatRoomID(client.username)
+	adminID, err := db._getUserID(client.username)
 	if err != nil || adminID == WITHOUT_ID {
 		logger.Err.Println(err)
+		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	if !(db._isAdminOfRoom(roomID, adminID) && db.isRoomPassword(roomID, req.Password)) {
+		logger.Err.Println("Wrong credentials")
 		return GeneralResponse{CODE_DELETE_CHAT_ROOM, STATUS_FAILED}
 	}
 
@@ -108,7 +113,7 @@ func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state int) interface
 		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	userID, err := db._getChatRoomID(client.username)
+	userID, err := db._getUserID(client.username)
 	if err != nil || userID == WITHOUT_ID {
 		logger.Err.Println(err)
 		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED}
@@ -137,15 +142,20 @@ func KickFromChatRoom(req *KickFromChatRoomRequest, client *Client) interface{} 
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	adminID, err := db._getChatRoomID(client.username)
+	adminID, err := db._getUserID(client.username)
 	if err != nil || adminID == WITHOUT_ID {
 		logger.Err.Println(err)
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	userID, err := db._getChatRoomID(req.Username)
+	userID, err := db._getUserID(req.Username)
 	if err != nil || userID == WITHOUT_ID {
 		logger.Err.Println(err)
+		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	if !db._isAdminOfRoom(roomID, adminID) {
+		logger.Err.Println("not admin trying to kick")
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
@@ -171,15 +181,20 @@ func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	adminID, err := db._getChatRoomID(client.username)
+	adminID, err := db._getUserID(client.username)
 	if err != nil || adminID == WITHOUT_ID {
 		logger.Err.Println(err)
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	userID, err := db._getChatRoomID(req.Username)
+	userID, err := db._getUserID(req.Username)
 	if err != nil || userID == WITHOUT_ID {
 		logger.Err.Println(err)
+		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	if !db._isAdminOfRoom(roomID, adminID) {
+		logger.Err.Println("not admin trying to ban")
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
@@ -204,15 +219,20 @@ func UnBanFromChatRoom(req *UnBanFromChatRoomRequest, client *Client) interface{
 		return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	adminID, err := db._getChatRoomID(client.username)
+	adminID, err := db._getUserID(client.username)
 	if err != nil || adminID == WITHOUT_ID {
 		logger.Err.Println(err)
 		return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
-	userID, err := db._getChatRoomID(req.Username)
+	userID, err := db._getUserID(req.Username)
 	if err != nil || userID == WITHOUT_ID {
 		logger.Err.Println(err)
+		return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED}
+	}
+
+	if !db._isAdminOfRoom(roomID, adminID) {
+		logger.Err.Println("not admin trying to unBan")
 		return GeneralResponse{CODE_UNBAN_FROM_CHAT_ROOM, STATUS_FAILED}
 	}
 
@@ -235,7 +255,7 @@ func SendMessage(req *SendMessageRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
 	}
 
-	userID, err := db._getChatRoomID(client.username)
+	userID, err := db._getUserID(client.username)
 	if err != nil || userID == WITHOUT_ID {
 		logger.Err.Println(err)
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
