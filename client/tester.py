@@ -60,31 +60,31 @@ class Tester:
         return self._send_req(CODE_LOGIN, req)
     
     def create_room(self, room_name, password) -> dict:
-        req = { 'name' : room_name, 'password' : password}
+        req = { 'roomName' : room_name, 'password' : password}
         return self._send_req(CODE_CREATE_CHAT_ROOM, req)
     
     def delete_room(self, room_name, password) -> dict:
-        req = { 'name' : room_name, 'password' : password}
+        req = { 'roomName' : room_name, 'password' : password}
         return self._send_req(CODE_DELETE_CHAT_ROOM, req)
     
     def join_room(self, room_name, password) -> dict:
-        req = { 'name' : room_name, 'password' : password }
+        req = { 'roomName' : room_name, 'password' : password }
         return self._send_req(CODE_JOIN_CHAT_ROOM, req)
 
     def kick_user(self, room_name, username) -> dict:
-        req = { 'name' : room_name, 'username' : username }
+        req = { 'roomName' : room_name, 'username' : username }
         return self._send_req(CODE_KICK_FROM_CHAT_ROOM, req)
 
     def ban_user(self, room_name, username) -> dict:
-        req = { 'name' : room_name, 'username' : username }
+        req = { 'roomName' : room_name, 'username' : username }
         return self._send_req(CODE_BAN_FROM_CHAT_ROOM, req)
 
     def unban_user(self, room_name, username) -> dict:
-        req = { 'name' : room_name, 'username' : username }
+        req = { 'roomName' : room_name, 'username' : username }
         return self._send_req(CODE_UNBAN_FROM_CHAT_ROOM, req)
     
     def send_message(self, room_name, content) -> dict:
-        req = { 'room' : room_name, 'content': content }
+        req = { 'roomName' : room_name, 'content': content }
         return self._send_req(CODE_SEND_MESSAGE, req)
 
 

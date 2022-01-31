@@ -38,38 +38,38 @@ type LoginRequest struct {
 }
 
 type CreateChatRoomRequest struct {
-	Name     string `json:"name"`
+	RoomName string `json:"roomName"`
 	Password string `json:"password"`
 }
 
 type JoinChatRoomRequest struct {
-	Name     string `json:"name"`
+	RoomName string `json:"roomName"`
 	Password string `json:"password"`
 }
 
 type DeleteChatRoomRequest struct {
-	Name     string `json:"name"`
+	RoomName string `json:"roomName"`
 	Password string `json:"password"`
 }
 
 type KickFromChatRoomRequest struct {
 	Username string `json:"username"`
-	Name     string `json:"name"`
+	RoomName string `json:"roomName"`
 }
 
 type BanFromChatRoomRequest struct {
 	Username string `json:"username"`
-	Name     string `json:"name"`
+	RoomName string `json:"roomName"`
 }
 
 type UnBanFromChatRoomRequest struct {
 	Username string `json:"username"`
-	Name     string `json:"name"`
+	RoomName string `json:"roomName"`
 }
 
 type SendMessageRequest struct {
-	Content string `json:"content"`
-	Room    string `json:"room"`
+	Content  string `json:"content"`
+	RoomName string `json:"roomName"`
 }
 
 type ErrorResponse struct {
