@@ -93,15 +93,12 @@ func InitDb(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (db *ChatDb) SendMessageDB(content string, roomName string, senderName string) (bool, error) {
+func (db *ChatDb) SendMessageDB(content string, roomID int, senderID int) (bool, error) {
 	sql := `
 		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, datetime('now') );
 	`
 
-	userID, _ := db._getUserID(senderName)
-	chatID, _ := db._getChatRoomID(roomName)
-
-	err := db._execNoneResponseQuery(sql, userID, chatID, content)
+	err := db._execNoneResponseQuery(sql, senderID, roomID, content)
 	if err != nil {
 		return false, err
 	}
@@ -146,13 +143,13 @@ func (db *ChatDb) CheckUsersPassword(username string, password string) bool {
 	return dbPassword == password
 }
 
-func (db *ChatDb) CheckChatRoomPassword(roomName string, roomPassword string) bool {
+func (db *ChatDb) isRoomPassword(roomID int, roomPassword string) bool {
 	var dbPassword string
 	sql := `
-		SELECT password FROM chats WHERE name = ?;
+		SELECT password FROM chats WHERE ID = ?;
 	`
 
-	err := db.QueryRow(sql, roomName).Scan(&dbPassword)
+	err := db.QueryRow(sql, roomID).Scan(&dbPassword)
 	if err != nil {
 		return false // chatRoom not found
 	}
@@ -163,17 +160,12 @@ func (db *ChatDb) CheckChatRoomPassword(roomName string, roomPassword string) bo
 /*
 	creating room to DB with given parameters
 */
-func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
-	adminID, err := db._getUserID(adminName)
-	if err != nil || adminID == WITHOUT_ID {
-		return false, err
-	}
-
+func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminID int) (bool, error) {
 	sql := `
 		INSERT INTO chats ( name, password, adminID ) VALUES ( ?, ?, ? );
 	`
 
-	err = db._execNoneResponseQuery(sql, roomName, roomPassword, adminID)
+	err := db._execNoneResponseQuery(sql, roomName, roomPassword, adminID)
 	if err != nil {
 		return false, err
 	}
@@ -181,27 +173,18 @@ func (db *ChatDb) CreateChatRoomDB(roomName string, roomPassword string, adminNa
 	return true, nil
 }
 
-func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminName string) (bool, error) {
-	adminID, err := db._getUserID(adminName)
-	if err != nil || adminID == WITHOUT_ID {
-		return false, err
-	}
-
-	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND password = ? AND adminID = ?", roomName, roomPassword, adminID) {
-		return false, err // not all credentials are right
-	}
-
-	err = db._deleteRoomMessages(roomName, roomPassword, adminID) //TODO: test this function
+func (db *ChatDb) DeleteChatRoomDB(roomID int, roomPassword string, adminID int) (bool, error) {
+	err := db._deleteRoomMessages(roomID, roomPassword, adminID) //TODO: test this function
 	if err != nil {
 		return false, err
 	}
 
-	err = db._deleteRoomMembers(roomName, roomPassword, adminID)
+	err = db._deleteRoomMembers(roomID, roomPassword, adminID)
 	if err != nil {
 		return false, err
 	}
 
-	err = db._deleteRoom(roomName, roomPassword, adminID)
+	err = db._deleteRoom(roomID, roomPassword, adminID)
 	if err != nil {
 		return false, err
 	}
@@ -209,26 +192,15 @@ func (db *ChatDb) DeleteChatRoomDB(roomName string, roomPassword string, adminNa
 	return true, nil
 }
 
-func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username string, banState int) (bool, error) {
-	// using the userID in db
-	userId, err := db._getUserID(username)
-	if err != nil || userId == WITHOUT_ID {
-		return false, err
-	}
-
-	// using the the chatID in db
-	chatID, err := db._getChatRoomID(roomName)
-	if err != nil || chatID == WITHOUT_ID {
-		return false, err
-	}
-
-	if inBan, err := db._isUserInBan(roomName, username); err != nil || inBan {
-		logger.Info.Println("user:", username, " in ban")
+func (db *ChatDb) JoinChatRoomDB(roomID int, roomPassword string, userID int, banState int) (bool, error) {
+	inBan := db._isUserInBan(roomID, userID)
+	if inBan {
+		logger.Info.Println("user:", userID, " in ban")
 		return false, nil
-	}
+	}//TODO:check if can move to requests.go or something else
 
 	// password has to match or giving ban
-	if !db.CheckChatRoomPassword(roomName, roomPassword) && banState == 0 {
+	if !db.isRoomPassword(roomID, roomPassword) && banState == 0 {
 		return false, nil
 	}
 
@@ -236,103 +208,60 @@ func (db *ChatDb) JoinChatRoomDB(roomName string, roomPassword string, username 
 		INSERT INTO chats_members ( userID, chatID, state ) VALUES ( ?, ?, ? );
 	`
 
-	err = db._execNoneResponseQuery(sql, userId, chatID, banState)
+	err := db._execNoneResponseQuery(sql, userID, roomID, banState)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (db *ChatDb) KickFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {
-	isAdmin, err := db._isAdminOfRoom(roomName, adminName)
-	if !isAdmin || err != nil {
-		return false, err
-	}
-
-	userID, err := db._getUserID(username)
-	if err != nil || userID == WITHOUT_ID {
-		return false, err // username not exists at all
-	}
-
-	chatID, err := db._getChatRoomID(roomName)
-	if err != nil || chatID == WITHOUT_ID {
-		return false, err // room not exists at all
-	}
-
+func (db *ChatDb) KickFromChatRoomDB(roomID int, userID int, adminID int) (bool, error) {
 	sql := `
 		DELETE FROM chats_members WHERE userID = ? AND chatID = ?;
 	`
 
-	err = db._execNoneResponseQuery(sql, userID, chatID)
+	err := db._execNoneResponseQuery(sql, userID, roomID)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (db *ChatDb) BanFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {
-	isAdmin, err := db._isAdminOfRoom(roomName, adminName)
-	if !isAdmin || err != nil {
-		return false, err
+func (db *ChatDb) BanFromChatRoomDB(roomID int, userID int, adminID int) (bool, error) {
+	isAdmin := db._isAdminOfRoom(roomID, adminID)
+	if !isAdmin {
+		return false, nil
 	}
 
-	isUserInRoom, err := db._isUserInRoom(roomName, username)
-	if err != nil {
-		return false, err
-	}
-
-	userID, err := db._getUserID(username)
-	if err != nil {
-		return false, err
-	}
-
-	chatID, err := db._getChatRoomID(roomName)
-	if err != nil {
-		return false, err
-	}
+	isUserInRoom := db._isUserInRoom(roomID, userID)
 
 	sql := `
 		UPDATE chats_members SET state = ? WHERE userID = ? AND chatID = ?;
 	`
 	if isUserInRoom {
-		err = db._execNoneResponseQuery(sql, STATE_BAN, userID, chatID)
+		err := db._execNoneResponseQuery(sql, STATE_BAN, userID, roomID)
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	} else {
-		return db.JoinChatRoomDB(roomName, "", username, STATE_BAN)
+		return db.JoinChatRoomDB(roomID, "", userID, STATE_BAN)
 	}
 }
 
-func (db *ChatDb) UnBanFromChatRoomDB(roomName string, username string, adminName string) (bool, error) {
-	adminID, err := db._getUserID(adminName)
-	if err != nil || adminID == WITHOUT_ID {
-		return false, err
+func (db *ChatDb) UnBanFromChatRoomDB(roomID int, userID int, adminID int) (bool, error) {
+	if !db._isAdminOfRoom(roomID, adminID) {
+		return false, nil // not all credentials are right
 	}
 
-	if !db._rowExists("SELECT * FROM chats WHERE name = ? AND adminID = ?", roomName, adminID) {
-		return false, err // not all credentials are right
-	}
-
-	userID, err := db._getUserID(username)
-	if err != nil || userID == WITHOUT_ID {
-		return false, err // check if user exists
-	}
-
-	chatID, err := db._getChatRoomID(roomName)
-	if err != nil || chatID == WITHOUT_ID {
-		return false, err // check if room exists
-	}
-
-	if !db._rowExists("SELECT * FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1", userID, chatID) {
-		return false, err //user not in ban
+	if !db._isUserInBan(roomID, userID) {
+		return false, nil //user not in ban
 	}
 
 	sql := `
 		DELETE FROM chats_members WHERE userID = ? AND chatID = ? AND state = 1;
 	`
-	err = db._execNoneResponseQuery(sql, userID, chatID)
+	err := db._execNoneResponseQuery(sql, userID, roomID)
 	if err != nil {
 		return false, err
 	}
