@@ -302,7 +302,7 @@ func UpdateMessages(req *UpdateMessagesRequest, client *Client) interface{} {
 	if len(client.messages) != 0 {
 		messages := client.messages
 		client.messages = client.messages[:0] // cleaning the messages
-		return UpdateMessagesResponse{messages}
+		return UpdateMessagesResponse{GeneralResponse{CODE_UPDATE, STATUS_SUCCESS}, messages}
 	}
 
 	client.Lock()
@@ -313,7 +313,7 @@ func UpdateMessages(req *UpdateMessagesRequest, client *Client) interface{} {
 
 	client.Unlock()
 
-	return UpdateMessagesResponse{messages}
+	return UpdateMessagesResponse{GeneralResponse{CODE_UPDATE, STATUS_SUCCESS}, messages}
 }
 
 func RemoveMemberFromChat(roomName string, username string) {

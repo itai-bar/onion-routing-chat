@@ -24,6 +24,13 @@ const (
 	CODE_ERR                  = "99"
 )
 
+type Message struct {
+	RoomName string    `json:"roomName"`
+	Content  string    `json:"content"`
+	Sender   string    `json:"sender"`
+	Time     time.Time `json:"time"`
+}
+
 type GeneralResponse struct {
 	Code   string `json:"code"`
 	Status int    `json:"status"`
@@ -79,14 +86,8 @@ type UpdateMessagesRequest struct {
 }
 
 type UpdateMessagesResponse struct {
+	GeneralResponse
 	Messages []Message `json:"messages"`
-}
-
-type Message struct {
-	RoomName string    `json:"roomName"`
-	Content  string    `json:"content"`
-	Sender   string    `json:"sender"`
-	Time     time.Time `json:"time"`
 }
 
 type ErrorResponse struct {
