@@ -18,8 +18,11 @@ const (
 )
 
 type Client struct {
+	sync.Mutex
 	username string
 	aesObj   *tor_aes.Aes
+	messages []Message
+	cond     *sync.Cond
 }
 
 type ChatRoom struct {
@@ -80,8 +83,11 @@ func HandleClient(conn net.Conn) {
 		// creating the new client, name will be set in login
 
 		clientsMx.Lock()
-		clients[*cookie] = &Client{username: "", aesObj: aes}
+		client := &Client{username: "", aesObj: aes}
+		client.cond = sync.NewCond(client)
+		clients[*cookie] = client
 		clientsMx.Unlock()
+
 		return
 	}
 
@@ -214,6 +220,14 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		}
 
 		resp = SendMessage(&req, client)
+
+	case CODE_UPDATE:
+		var req UpdateMessagesRequest
+		if errMsg := Unmarshal(CODE_UPDATE, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = UpdateMessages(&req, client)
 
 	default:
 		resp = MakeErrorResponse("undefined request")

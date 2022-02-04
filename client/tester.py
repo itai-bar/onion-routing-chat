@@ -4,8 +4,10 @@ from telnetlib import STATUS
 from tor.client import TorClient
 from tor.crypto import Rsa, Aes
 
+import threading
 import json
 import sys
+import time
 
 COOKIE_SIZE = 15
 REQ_CODE_SIZE = 2
@@ -86,6 +88,11 @@ class Tester:
     def send_message(self, room_name, content) -> dict:
         req = { 'roomName' : room_name, 'content': content }
         return self._send_req(CODE_SEND_MESSAGE, req)
+    
+    def get_update(self, room_name) -> dict:
+        while True:
+            req = { 'roomName' : room_name }
+            self._send_req(CODE_UPDATE, req)
 
 
 def load_RSA_from_file(path_to_keys):
@@ -144,7 +151,13 @@ if __name__ == '__main__':
     assert tester_dan.join_room("my_room", "room_pass")['status'] == STATUS_FAILED
     assert tester_dan.join_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
 
+    t = threading.Thread(target=tester_itai.get_update, args=('my_room', ))
+    t2 = threading.Thread(target=tester_tal.get_update, args=('my_room', ))
+    t.start()
     
     msg = 'this is the first every message sent by torchat'
-    assert tester_tal.send_message('my_room', msg)['status'] == STATUS_SUCCESS
-    
+    assert tester_tal.send_message('my_room', msg + ' 1')['status'] == STATUS_SUCCESS
+    assert tester_tal.send_message('my_room', msg + ' 2')['status'] == STATUS_SUCCESS
+    t2.start()
+    assert tester_tal.send_message('my_room', msg + ' 3')['status'] == STATUS_SUCCESS
+

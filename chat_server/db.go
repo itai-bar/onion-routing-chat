@@ -2,6 +2,7 @@ package chat_server
 
 import (
 	"database/sql"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -93,12 +94,13 @@ func InitDb(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (db *ChatDb) SendMessageDB(content string, roomID int, senderID int) (bool, error) {
+func (db *ChatDb) SendMessageDB(content string, roomID int, senderID int, time time.Time) (bool, error) {
 	sql := `
-		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, datetime('now') );
+		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, ? );
 	`
 
-	err := db._execNoneResponseQuery(sql, senderID, roomID, content)
+	time.Unix()
+	err := db._execNoneResponseQuery(sql, senderID, roomID, content, time)
 	if err != nil {
 		return false, err
 	}
@@ -197,7 +199,7 @@ func (db *ChatDb) JoinChatRoomDB(roomID int, roomPassword string, userID int, ba
 	if inBan {
 		logger.Info.Println("user:", userID, " in ban")
 		return false, nil
-	}//TODO:check if can move to requests.go or something else
+	} //TODO:check if can move to requests.go or something else
 
 	// password has to match or giving ban
 	if !db.isRoomPassword(roomID, roomPassword) && banState == 0 {

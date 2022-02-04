@@ -1,5 +1,7 @@
 package chat_server
 
+import "time"
+
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
 	if req.Username == "" || !isValidPassword(req.Password) {
@@ -273,7 +275,8 @@ func SendMessage(req *SendMessageRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
 	}
 
-	ok, err := db.SendMessageDB(req.Content, roomID, userID)
+	messageTime := time.Now()
+	ok, err := db.SendMessageDB(req.Content, roomID, userID, messageTime)
 	if err != nil {
 		logger.Err.Println(err)
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
@@ -282,9 +285,35 @@ func SendMessage(req *SendMessageRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED}
 	}
 
-	// TODO: walk through all client in chosen room and update them about the message!
+	newMsg := Message{req.RoomName, req.Content, client.username, messageTime}
+
+	// notifying every member of the room about the new message
+	for _, member := range chatRooms[req.RoomName].onlineMembers {
+		member.Lock()
+		member.messages = append(member.messages, newMsg)
+		member.Unlock()
+		member.cond.Signal()
+	}
 
 	return GeneralResponse{CODE_SEND_MESSAGE, STATUS_SUCCESS}
+}
+
+func UpdateMessages(req *UpdateMessagesRequest, client *Client) interface{} {
+	if len(client.messages) != 0 {
+		messages := client.messages
+		client.messages = client.messages[:0] // cleaning the messages
+		return UpdateMessagesResponse{messages}
+	}
+
+	client.Lock()
+	client.cond.Wait() // waiting for a message
+
+	messages := client.messages
+	client.messages = client.messages[:0] // cleaning the messages
+
+	client.Unlock()
+
+	return UpdateMessagesResponse{messages}
 }
 
 func RemoveMemberFromChat(roomName string, username string) {

@@ -1,5 +1,7 @@
 package chat_server
 
+import "time"
+
 const (
 	STATUS_SUCCESS = 1
 	STATUS_FAILED  = 0
@@ -70,6 +72,21 @@ type UnBanFromChatRoomRequest struct {
 type SendMessageRequest struct {
 	Content  string `json:"content"`
 	RoomName string `json:"roomName"`
+}
+
+type UpdateMessagesRequest struct {
+	RoomName string `json:"roomName"`
+}
+
+type UpdateMessagesResponse struct {
+	Messages []Message `json:"messages"`
+}
+
+type Message struct {
+	RoomName string    `json:"roomName"`
+	Content  string    `json:"content"`
+	Sender   string    `json:"sender"`
+	Time     time.Time `json:"time"`
 }
 
 type ErrorResponse struct {
