@@ -299,6 +299,24 @@ func SendMessage(req *SendMessageRequest, client *Client) interface{} {
 }
 
 func UpdateMessages(req *UpdateMessagesRequest, client *Client) interface{} {
+	roomID, err := db._getChatRoomID(req.RoomName)
+	if err != nil || roomID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_UPDATE, STATUS_FAILED}
+	}
+
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_UPDATE, STATUS_FAILED}
+	}
+
+	inRoom := db._isUserInRoom(roomID, roomID)
+	if !inRoom {
+		logger.Err.Println("user not in room")
+		return GeneralResponse{CODE_UPDATE, STATUS_FAILED}
+	}
+
 	if len(client.messages) != 0 {
 		messages := client.messages
 		client.messages = client.messages[:0] // cleaning the messages
@@ -314,6 +332,35 @@ func UpdateMessages(req *UpdateMessagesRequest, client *Client) interface{} {
 	client.Unlock()
 
 	return UpdateMessagesResponse{GeneralResponse{CODE_UPDATE, STATUS_SUCCESS}, messages}
+}
+
+func LoadMessages(req *LoadRoomsMessagesRequest, client *Client) interface{} {
+	roomID, err := db._getChatRoomID(req.RoomName)
+	if err != nil || roomID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_LOAD_MESSAGES, STATUS_FAILED}
+	}
+
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_LOAD_MESSAGES, STATUS_FAILED}
+	}
+
+	inRoom := db._isUserInRoom(roomID, roomID)
+	if !inRoom {
+		logger.Err.Println("user not in room")
+		return GeneralResponse{CODE_LOAD_MESSAGES, STATUS_FAILED}
+	}
+
+	messages, err := db.LoadLastMessages(roomID, req.Amount, req.Offset)
+	logger.Info.Println(messages)
+
+	if err != nil {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_LOAD_MESSAGES, STATUS_FAILED}
+	}
+	return LoadRoomsMessagesResponse{GeneralResponse{CODE_LOAD_MESSAGES, STATUS_SUCCESS}, messages}
 }
 
 func RemoveMemberFromChat(roomName string, username string) {

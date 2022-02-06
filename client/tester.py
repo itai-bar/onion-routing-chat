@@ -23,6 +23,7 @@ CODE_KICK_FROM_CHAT_ROOM  = b"08"
 CODE_BAN_FROM_CHAT_ROOM   = b"09"
 CODE_UNBAN_FROM_CHAT_ROOM = b"10"
 CODE_SEND_MESSAGE         = b"11"
+CODE_LOAD_MESSAGES        = b"12"
 CODE_ERR                  = b"99"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
@@ -89,6 +90,10 @@ class Tester:
         req = { 'roomName' : room_name, 'content': content }
         return self._send_req(CODE_SEND_MESSAGE, req)
     
+    def load_messages(self, room_name, amount, offset) -> dict:
+        req = { 'roomName' : room_name, 'amount' : amount, 'offset' : offset }
+        return self._send_req(CODE_LOAD_MESSAGES, req)
+    
     def get_update(self, room_name) -> dict:
         while True:
             req = { 'roomName' : room_name }
@@ -152,12 +157,16 @@ if __name__ == '__main__':
     assert tester_dan.join_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
 
     t = threading.Thread(target=tester_itai.get_update, args=('my_room', ))
-    t2 = threading.Thread(target=tester_tal.get_update, args=('my_room', ))
     t.start()
     
-    msg = 'this is the first every message sent by torchat'
-    assert tester_tal.send_message('my_room', msg + ' 1')['status'] == STATUS_SUCCESS
-    assert tester_tal.send_message('my_room', msg + ' 2')['status'] == STATUS_SUCCESS
-    t2.start()
-    assert tester_tal.send_message('my_room', msg + ' 3')['status'] == STATUS_SUCCESS
+    msg = 'hello this is a message!!!'
+    for i in range(30):
+        assert tester_tal.send_message('my_room', msg + f' {i}')['status'] == STATUS_SUCCESS
+
+    offset = 0
+    tester_dan.load_messages('my_room', 3, offset)
+    offset += 3
+    tester_dan.load_messages('my_room', 3, offset)
+    
+    
 

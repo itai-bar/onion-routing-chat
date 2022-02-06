@@ -21,6 +21,7 @@ const (
 	CODE_BAN_FROM_CHAT_ROOM   = "09"
 	CODE_UNBAN_FROM_CHAT_ROOM = "10"
 	CODE_SEND_MESSAGE         = "11"
+	CODE_LOAD_MESSAGES        = "12"
 	CODE_ERR                  = "99"
 )
 
@@ -86,6 +87,17 @@ type UpdateMessagesRequest struct {
 }
 
 type UpdateMessagesResponse struct {
+	GeneralResponse
+	Messages []Message `json:"messages"`
+}
+
+type LoadRoomsMessagesRequest struct {
+	RoomName string `json:"roomName"`
+	Amount   int    `json:"amount"`
+	Offset   int    `json:"offset"`
+}
+
+type LoadRoomsMessagesResponse struct {
 	GeneralResponse
 	Messages []Message `json:"messages"`
 }

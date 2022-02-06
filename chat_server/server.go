@@ -223,11 +223,19 @@ func HandleRequests(code string, data []byte, client *Client) string {
 
 	case CODE_UPDATE:
 		var req UpdateMessagesRequest
-		if errMsg := Unmarshal(CODE_UPDATE, data, &req); errMsg != "" {
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
 			return errMsg
 		}
 
 		resp = UpdateMessages(&req, client)
+
+	case CODE_LOAD_MESSAGES:
+		var req LoadRoomsMessagesRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = LoadMessages(&req, client)
 
 	default:
 		resp = MakeErrorResponse("undefined request")

@@ -99,7 +99,6 @@ func (db *ChatDb) SendMessageDB(content string, roomID int, senderID int, time t
 		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, ? );
 	`
 
-	time.Unix()
 	err := db._execNoneResponseQuery(sql, senderID, roomID, content, time)
 	if err != nil {
 		return false, err
@@ -259,6 +258,42 @@ func (db *ChatDb) UnBanFromChatRoomDB(roomID int, userID int, adminID int) (bool
 		return false, err
 	}
 	return true, nil
+}
+
+func (db *ChatDb) LoadLastMessages(roomId int, amount int, offset int) ([]Message, error) {
+	sql := `
+		SELECT chats.name, users.username, messages.content, strftime("%s", datetime(messages.time)) 
+		FROM messages
+		INNER JOIN users
+		ON users.ID = messages.senderID
+		INNER JOIN chats
+		ON chats.ID = messages.chatID
+		WHERE messages.chatID = ? ORDER BY messages.time DESC LIMIT ? OFFSET ?;
+	`
+
+	var messages []Message
+
+	rows, err := db.Query(sql, roomId, amount, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var roomName string
+		var sender string
+		var content string
+		var unixTime int64
+
+		err = rows.Scan(&roomName, &sender, &content, &unixTime)
+		if err != nil {
+			return nil, err
+		}
+
+		messages = append(messages, Message{roomName, content, sender, time.Unix(unixTime, 0)})
+	}
+
+	return messages, err
 }
 
 func CloseDB() {
