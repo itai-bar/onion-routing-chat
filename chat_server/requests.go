@@ -25,6 +25,9 @@ func Register(req *RegisterRequest) interface{} {
 // logs the user into the system if his password and username are correct
 func Login(req *LoginRequest, client *Client) interface{} {
 	if db.CheckUsersPassword(req.Username, req.Password) {
+		if IsUserLoggedin(req.Username) {
+			return GeneralResponse{CODE_LOGIN, STATUS_FAILED}
+		}
 		client.username = req.Username
 		return GeneralResponse{CODE_LOGIN, STATUS_SUCCESS}
 	}
@@ -375,4 +378,13 @@ func RemoveMemberFromChat(roomName string, username string) {
 	}
 
 	chatRoomsMx.Unlock()
+}
+
+func IsUserLoggedin(username string) bool {
+	for _, client := range clients {
+		if client.username == username {
+			return true
+		}
+	}
+	return false
 }
