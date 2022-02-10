@@ -1,35 +1,60 @@
 import socket
-import sys
 
 from . import serialize, const, crypto, validation, key_exchange as ke
 
-def tor_message(msg : str, rsa_key_pair : crypto.Rsa) -> bytes:
-    """Sends a message using the tor protocol
+class TorClient:
+    def __init__(self, rsa : crypto.Rsa, router_ip : str, dst_ip : str):
+        self._rsa = rsa
+        self._router_ip = router_ip
+        self._dst_ip = dst_ip
 
-    Args:
-        msg (str): message for the final server
-    Returns:
-        resp (str)
-    """
+    def send(self, msg):
+        """Sends a message using the tor protocol
 
-    route = get_nodes_and_dst_ips(rsa_key_pair)  # [1st node, 2nd node, 3rd node, dst_ip]
-    print("got ip's succesfully:", route)
+        Args:
+            msg (str): message for the final server
+        Returns:
+            resp (str)
+        """
 
-    with connect_to_server(route[const.ST_NODE_IP_IDX], 8989) as sock:
-        aes_keys = ke.key_exchange(route[:-1], sock, rsa_key_pair)
+        route = self.get_nodes()  # [1st node, 2nd node, 3rd node, dst_ip]
+        print("got ip's succesfully:", route)
 
-        tor_msg = serialize.serialize_tor_message(msg, route[1:], True, aes_keys)
-        print(tor_msg)
+        with connect_to_server(route[const.ST_NODE_IP_IDX], 8989) as sock:
+            aes_keys = ke.key_exchange(route[:-1], sock, self._rsa)
 
-        sock.sendall(tor_msg)
+            tor_msg = serialize.serialize_tor_message(msg, route[1:], True, aes_keys)
+            print(tor_msg)
 
-        size = int(sock.recv(const.MESSAGE_SIZE_LEN).decode()) # reading plaintext size
-        resp = sock.recv(size)
+            sock.sendall(tor_msg)
+
+            size = int(sock.recv(const.MESSAGE_SIZE_LEN).decode()) # reading plaintext size
+            resp = sock.recv(size)
     
-        resp = crypto.decrypt_by_order(resp, aes_keys)
+            resp = crypto.decrypt_by_order(resp, aes_keys)
 
-    return resp.decode()
+            return resp.decode()
 
+    def get_nodes(self):
+        """get router_ip and ip_of_destination from arguments and return nodes route and dst
+
+        Returns:
+            list(string): Received ip's from router
+        """
+        sock_with_router = connect_to_server(self._router_ip, const.ROUTER_PORT)
+        get_route_message = const.CODE_ROUTE + str(len(self._rsa.pem_public_key)).zfill(const.MESSAGE_SIZE_LEN) + self._rsa.pem_public_key.decode()
+        sock_with_router.sendall(get_route_message.encode())
+
+        size = int(sock_with_router.recv(const.MESSAGE_SIZE_LEN).decode())
+
+        response = sock_with_router.recv(size)
+        sock_with_router.close()
+
+        list_of_ips = self._rsa.decrypt(response).decode().split("&")
+        list_of_ips.append(self._dst_ip)
+        return list_of_ips
+
+        
 def connect_to_server(ip : str, port : int) -> socket.socket:
     """The function creates TCP socket, create connection with given 'ip' and 'port' and returns the connected socket
 
@@ -48,21 +73,3 @@ def connect_to_server(ip : str, port : int) -> socket.socket:
     sock.connect(server_address)
     return sock
 
-def get_nodes_and_dst_ips(rsa_obj : crypto.Rsa) -> list:
-    """get router_ip and ip_of_destination from arguments and return nodes route and dst
-
-    Returns:
-        list(string): Received ip's from router
-    """
-    sock_with_router = connect_to_server(sys.argv[const.ROUTER_IP_IDX], const.ROUTER_PORT)
-    get_route_message = const.CODE_ROUTE + str(len(rsa_obj.pem_public_key)).zfill(const.MESSAGE_SIZE_LEN) + rsa_obj.pem_public_key.decode()
-    sock_with_router.sendall(get_route_message.encode())
-
-    size = int(sock_with_router.recv(const.MESSAGE_SIZE_LEN).decode())
-
-    response = sock_with_router.recv(size)
-    sock_with_router.close()
-
-    list_of_ips = rsa_obj.decrypt(response).decode().split("&")
-    list_of_ips.append(sys.argv[const.DESTINATION__IP_IDX])
-    return list_of_ips
