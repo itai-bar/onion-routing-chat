@@ -25,10 +25,13 @@ STATUS_FAILED  = 0
 
 KEYS_FILES_NAME = 'keys.pem'
 
-class Client:
+class ChatClient:
     def __init__(self):
-        self._client = TorClient(Rsa(*load_RSA_from_file(KEYS_FILES_NAME)),
-                                 sys.argv[1], sys.argv[1])
+        priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
+        rsa_obj = Rsa(pub_key, priv_key)
+
+        self._client = TorClient(rsa_obj,
+                                 sys.argv[1], sys.argv[2])
 
     def auth(self):
         msg = CODE_AUTH + self._client._rsa.pem_public_key

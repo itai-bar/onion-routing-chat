@@ -1,28 +1,32 @@
-from client import Client
-from tor.crypto import Rsa
-
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager
 
-from windows import LoginWindow
+from windows import LoginWindow, SignupWindow
 
 class WindowManager(ScreenManager):
     pass
 
-kv = Builder.load_file('chat.kv')
-window_manager = WindowManager()
-
-screens = [LoginWindow(name='login')] # TODO: add every screen here
-for screen in screens:
-    window_manager.add_widget(screen)
-
 class ChatApp(App):
-    def build(self):
-        return window_manager
+    def __init__(self, wm, **kwargs):
+        self.wm = wm
+        super().__init__(**kwargs)
 
-window_manager.current = 'login'
-client = Client()
+    def build(self):
+        return self.wm
+
+class Chat:
+    def __init__(self) -> None:
+        kv = Builder.load_file('chat.kv')
+        self.window_manager = WindowManager()
+
+        self._screens = [LoginWindow(self.window_manager, name='login'),
+                         SignupWindow(self.window_manager, name='signup')] 
+        for screen in self._screens:
+            self.window_manager.add_widget(screen)
+        
+        self.window_manager.current = 'login'
 
 if __name__ == '__main__':
-    ChatApp().run()
+    chat = Chat()
+    ChatApp(chat.window_manager).run()
