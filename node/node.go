@@ -3,10 +3,11 @@ package node
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net"
+	"os"
 	"strconv"
 	"torbasedchat/pkg/tor_aes"
+	"torbasedchat/pkg/tor_logger"
 	"torbasedchat/pkg/tor_rsa"
 	"torbasedchat/pkg/tor_server"
 )
@@ -25,6 +26,12 @@ type TorHeaders struct {
 	rest        []byte
 }
 
+var logger *tor_logger.TorLogger
+
+func init() {
+	logger = tor_logger.NewTorLogger(os.Getenv("NODE_LOG"))
+}
+
 func HandleClient(conn net.Conn) {
 	var nextNodeConn net.Conn
 	socketOpenFlag := false
@@ -41,19 +48,19 @@ func HandleClient(conn net.Conn) {
 	for {
 		allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Err.Println(err)
 			return
 		}
 
 		allData, err = aes_key.Decrypt(allData)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Err.Println(err)
 			return
 		}
 
 		headers, err := GetTorHeaders(allData)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Err.Println(err)
 			return
 		}
 
@@ -61,7 +68,7 @@ func HandleClient(conn net.Conn) {
 		if !socketOpenFlag {
 			nextNodeConn, err = net.Dial("tcp", headers.nextIp+":8989")
 			if err != nil {
-				log.Println("ERROR: ", err)
+				logger.Err.Println(err)
 				return
 			}
 			socketOpenFlag = true
@@ -69,11 +76,11 @@ func HandleClient(conn net.Conn) {
 
 		resp, err := TransferMessage(nextNodeConn, headers.rest, aes_key)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Err.Println(err)
 			return
 		}
 		conn.Write(resp)
-		log.Println("sent response back")
+		logger.Info.Println("sent response back")
 
 		if headers.closeSocket == 1 {
 			conn.Close()
@@ -146,7 +153,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 
 	// sending the request to the next part of the path
 	conn.Write(req)
-	log.Println("forwarded the rest of the message")
+	logger.Info.Println("forwarded the rest of the message")
 	// from now we expect a response from the rest of the network
 
 	data, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
@@ -172,6 +179,7 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	pemKey, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil { // error can occur when router trying to check if node is alive
+		logger.Err.Println("EOF error can occur when router tring to check if node is alive..")
 		return nil, err
 	}
 
@@ -183,7 +191,7 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 		return nil, err
 	}
 
-	log.Println("got rsa key from client")
+	logger.Info.Println("got rsa key from client")
 
 	buf, err := rsa.Encrypt(aes.Key)
 	if err != nil {
@@ -196,6 +204,6 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 
 	conn.Write(buf)
 
-	log.Println("sent rsa encrypted aes key")
+	logger.Info.Println("sent rsa encrypted aes key")
 	return aes, nil
 }

@@ -2,6 +2,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,go,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,go,python
 
+#Personal#
+*.pem
+*.sqlite
+
 ### Go ###
 # Binaries for programs and plugins
 *.exe

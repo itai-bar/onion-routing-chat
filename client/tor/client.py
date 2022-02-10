@@ -8,7 +8,7 @@ class TorClient:
         self._router_ip = router_ip
         self._dst_ip = dst_ip
 
-    def send(self, msg):
+    def send(self, msg : bytes):
         """Sends a message using the tor protocol
 
         Args:
@@ -18,13 +18,11 @@ class TorClient:
         """
 
         route = self.get_nodes()  # [1st node, 2nd node, 3rd node, dst_ip]
-        print("got ip's succesfully:", route)
 
         with connect_to_server(route[const.ST_NODE_IP_IDX], 8989) as sock:
             aes_keys = ke.key_exchange(route[:-1], sock, self._rsa)
 
             tor_msg = serialize.serialize_tor_message(msg, route[1:], True, aes_keys)
-            print(tor_msg)
 
             sock.sendall(tor_msg)
 
@@ -33,7 +31,7 @@ class TorClient:
     
             resp = crypto.decrypt_by_order(resp, aes_keys)
 
-            return resp.decode()
+            return resp
 
     def get_nodes(self):
         """get router_ip and ip_of_destination from arguments and return nodes route and dst
@@ -53,8 +51,8 @@ class TorClient:
         list_of_ips = self._rsa.decrypt(response).decode().split("&")
         list_of_ips.append(self._dst_ip)
         return list_of_ips
+    
 
-        
 def connect_to_server(ip : str, port : int) -> socket.socket:
     """The function creates TCP socket, create connection with given 'ip' and 'port' and returns the connected socket
 

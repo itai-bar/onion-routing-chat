@@ -1,26 +1,59 @@
 package chat_server
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
+	"os"
+	"sync"
+	"torbasedchat/pkg/tor_aes"
+	"torbasedchat/pkg/tor_logger"
 	"torbasedchat/pkg/tor_server"
 )
 
 const (
 	DATA_SIZE_SEGMENT_SIZE = 5
+	REQ_CODE_SIZE          = 2
 )
 
-const (
-	REQ_CODE_SIZE = 2
-	CODE_AUTH     = "00"
-	CODE_UPDATE   = "01"
-	CODE_LOGIN    = "02"
-	CODE_SIGN_UP  = "03"
-	CODE_LOGOUT   = "04"
-	CODE_MSG      = "05"
-)
+type Client struct {
+	sync.Mutex
+	username string
+	aesObj   *tor_aes.Aes
+	messages []Message
+	cond     *sync.Cond
+}
 
-var clients map[Cookie]Client
+type ChatRoom struct {
+	onlineMembers []*Client
+}
+
+var clients map[Cookie]*Client
+var chatRooms map[string]*ChatRoom
+
+var db *ChatDb
+
+var clientsMx sync.Mutex
+var chatRoomsMx sync.Mutex
+
+var logger *tor_logger.TorLogger
+
+func init() {
+	var err error
+
+	logger = tor_logger.NewTorLogger(os.Getenv("CHAT_LOG"))
+
+	clients = make(map[Cookie]*Client)
+	chatRooms = make(map[string]*ChatRoom)
+
+	sqlDb, err := InitDb("/app/db.sqlite")
+	if err != nil {
+		log.Fatal("ERROR: ", err)
+	}
+
+	db = InitChatDb(sqlDb)
+}
 
 /*
 	handles the connection with every client
@@ -30,24 +63,203 @@ var clients map[Cookie]Client
 func HandleClient(conn net.Conn) {
 	defer conn.Close()
 
-	msgCode, err := tor_server.ReadSize(conn, REQ_CODE_SIZE)
+	allData, err := tor_server.ReadDataFromSizeHeader(conn, DATA_SIZE_SEGMENT_SIZE)
 	if err != nil {
-		log.Println("ERROR: ", err)
+		logger.Err.Println(err)
 		return
 	}
 
-	switch string(msgCode) {
-	case CODE_AUTH:
-		cookie, aes, err := Auth(conn)
-		log.Println("the cookie is", cookie)
+	code, data := string(allData[:REQ_CODE_SIZE]), allData[REQ_CODE_SIZE:]
+
+	if code == CODE_AUTH {
+		cookie, aes, err := Auth(conn, data)
 		if err != nil {
-			log.Println("ERROR: ", err)
+			logger.Err.Println(err)
 			return
 		}
 
+		logger.Info.Println("the cookie is", *cookie)
+
 		// creating the new client, name will be set in login
-		clients[*cookie] = Client{"", *aes, conn}
-	default:
-		// TODO: DEAL WITH DEFAULT AND SEND ERROR MESSAGE
+
+		clientsMx.Lock()
+		client := &Client{username: "", aesObj: aes}
+		client.cond = sync.NewCond(client)
+		clients[*cookie] = client
+		clientsMx.Unlock()
+
+		return
 	}
+
+	// client found in map
+
+	cookie, err := InitCookie(data[:COOKIE_SIZE])
+	if err != nil {
+		logger.Err.Println(err)
+		return
+	}
+
+	clientsMx.Lock()
+	currentClient, inMap := clients[*cookie]
+	clientsMx.Unlock()
+
+	if !inMap {
+		logger.Err.Println("cookie not in map")
+		// TODO: send error resp
+		return
+	}
+
+	decrypted, err := currentClient.aesObj.Decrypt(data[COOKIE_SIZE:])
+	logger.Info.Printf("client: %s. req: %s+%s", currentClient.username, code, string(decrypted))
+
+	if err != nil {
+		logger.Err.Println(err)
+		// TODO: send error resp
+		return
+	}
+
+	// chat server logic, created the response in json
+	jsonResp := HandleRequests(code, decrypted, currentClient)
+	// encrypting the json with the aes key saved for the specific cookie
+	encryptpedResp, err := currentClient.aesObj.Encrypt([]byte(jsonResp))
+	if err != nil {
+		logger.Err.Println(err)
+		// TODO: send error resp
+		return
+	}
+
+	// the network requires a data size header
+	serializedResp := fmt.Sprintf("%05d", len(encryptpedResp)) + string(encryptpedResp)
+	conn.Write([]byte(serializedResp))
+}
+
+/*
+	gets the request code and data, proccess it and returns the resp json
+*/
+func HandleRequests(code string, data []byte, client *Client) string {
+	var resp interface{}
+
+	// those requests require to be logged in
+	if code != CODE_REGISTER && code != CODE_LOGIN {
+		if client.username == "" {
+			// not logged in
+			return Marshal(MakeErrorResponse("Must log in to use this request"))
+		}
+	}
+
+	db._saveCurrentState()
+	switch code {
+	case CODE_REGISTER:
+		var req RegisterRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = Register(&req)
+
+	case CODE_LOGIN:
+		var req LoginRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = Login(&req, client)
+
+	case CODE_CREATE_CHAT_ROOM:
+		var req CreateChatRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = CreateChatRoom(&req, client)
+
+	case CODE_DELETE_CHAT_ROOM:
+		var req DeleteChatRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = DeleteChatRoom(&req, client)
+
+	case CODE_JOIN_CHAT_ROOM:
+		var req JoinChatRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = JoinChatRoom(&req, client, STATE_NORMAL)
+
+	case CODE_KICK_FROM_CHAT_ROOM:
+		var req KickFromChatRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = KickFromChatRoom(&req, client)
+
+	case CODE_BAN_FROM_CHAT_ROOM:
+		var req BanFromChatRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = BanFromChatRoom(&req, client)
+
+	case CODE_UNBAN_FROM_CHAT_ROOM:
+		var req UnBanFromChatRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = UnBanFromChatRoom(&req, client)
+
+	case CODE_SEND_MESSAGE:
+		var req SendMessageRequest
+		if errMsg := Unmarshal(CODE_SEND_MESSAGE, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = SendMessage(&req, client)
+
+	case CODE_UPDATE:
+		var req UpdateMessagesRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = UpdateMessages(&req, client)
+
+	case CODE_LOAD_MESSAGES:
+		var req LoadRoomsMessagesRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+
+		resp = LoadMessages(&req, client)
+
+	default:
+		resp = MakeErrorResponse("undefined request")
+	}
+	db._saveChanges()
+	return Marshal(resp)
+}
+
+// less code when using this instead of directly calling marshal
+func Marshal(v interface{}) string {
+	s, err := json.Marshal(v)
+	if err != nil {
+		logger.Info.Println(err)
+		return ""
+	}
+	return string(s)
+}
+
+func Unmarshal(code string, data []byte, v interface{}) string {
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		db._revertChanges()
+		logger.Info.Println(err)
+		return Marshal(GeneralResponse{code, STATUS_FAILED})
+	}
+	return ""
 }
