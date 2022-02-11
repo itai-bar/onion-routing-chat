@@ -108,3 +108,22 @@
                 root.manager.transition.direction = "left"
                 root.btn_goto_login()
 
+<RoomsWindow>:
+    name: "rooms"
+
+    roomsNames: roomsNames
+    
+    FloatLayout:
+        ScrollView:
+            size: root.width, root.height/2
+            GridLayout:
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                id: roomsNames
+    Button:
+        pos_hint:{"x":0.3,"y":0.25}
+        size_hint: 0.4, 0.1
+        font_size: (root.width**2 + root.height**2) / 13**4
+        text: "Enter Room"
+        

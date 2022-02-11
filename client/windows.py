@@ -8,6 +8,8 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.scrollview import ScrollView
 
 from chat_client import ChatClient
 from chat_client import STATUS_SUCCESS, STATUS_FAILED
@@ -21,6 +23,12 @@ def popup(title, text):
                   size_hint=(None, None), size=(400, 400))
     pop.open()
 
+def popup_case(func):
+    resp = func()
+    if resp['status'] == STATUS_FAILED :
+        popup(resp['title'], resp['info'])
+        
+
 class LoginWindow(Screen):
     username = ObjectProperty(None)
     password = ObjectProperty(None)
@@ -31,13 +39,14 @@ class LoginWindow(Screen):
 
     def btn_login(self):
         resp = client.login(self.username.text, self.password.text)
+        self.reset()
         if resp['status'] == STATUS_FAILED:
             popup(resp['title'], resp['info'])
-            self.reset()
         else:
-            self.reset()
-            print('success')
-            # TODO: next window
+            self.wm.current = 'rooms'
+            self.ids.roomsNames.add_widget(Button(text="asd", size_hint_y=None,height=100))
+            
+            
             
     def btn_goto_signup(self):
         self.reset()
@@ -71,4 +80,19 @@ class SignupWindow(Screen):
     def reset(self):
         self.username.text = ''
         self.password.text = ''
+
+class RoomsWindow(Screen):
+    def __init__(self, wm, **kw):
+        self.wm = wm
+        super().__init__(**kw)
+    
+    def set_rooms(self):
+        resp = client.get_rooms()
+        if resp['status'] == STATUS_FAILED:
+            popup(resp['title'], resp['info'])
+        else:
+            rooms = resp['rooms']
+            if rooms:
+                for room in rooms:
+                    self.ids.roomsNames.add_widget(Button(text=str(room), size_hint_y=None,height=100))
         

@@ -298,7 +298,7 @@ func (db *ChatDb) LoadLastMessages(roomId int, amount int, offset int) ([]Messag
 
 func (db *ChatDb)GetRoomsDB() ([]string, error) {
 	sql := `
-	SELECT name FROM chats
+		SELECT name FROM chats
 	`
 	var rooms []string
 
