@@ -296,6 +296,31 @@ func (db *ChatDb) LoadLastMessages(roomId int, amount int, offset int) ([]Messag
 	return messages, err
 }
 
+func (db *ChatDb)GetRoomsDB() ([]string, error) {
+	sql := `
+	SELECT name FROM chats
+	`
+	var rooms []string
+
+	rows, err := db.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var roomName string
+
+		err = rows.Scan(&roomName)
+		if err != nil {
+			return nil, err
+		}
+
+		rooms = append(rooms, roomName)
+	}
+
+	return rooms, nil
+}
+
 func CloseDB() {
 	db.Close()
 }

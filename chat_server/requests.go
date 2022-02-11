@@ -366,6 +366,14 @@ func LoadMessages(req *LoadRoomsMessagesRequest, client *Client) interface{} {
 	return LoadRoomsMessagesResponse{GeneralResponse{CODE_LOAD_MESSAGES, STATUS_SUCCESS, "load messages success", "load messages successfuly"}, messages}
 }
 
+func GetRooms() interface{} {
+	rooms, err := db.GetRoomsDB()
+	if err != nil {
+		return GeneralResponse{CODE_GET_ROOMS, STATUS_FAILED, "get rooms error", "something went wrong"}
+	}
+	return GetRoomsResponse{GeneralResponse{CODE_GET_ROOMS, STATUS_SUCCESS, "get rooms success", "got rooms successfuly"}, rooms}
+}
+
 func RemoveMemberFromChat(roomName string, username string) {
 	chatRoomsMx.Lock()
 

@@ -237,6 +237,9 @@ func HandleRequests(code string, data []byte, client *Client) string {
 
 		resp = LoadMessages(&req, client)
 
+	case CODE_GET_ROOMS:
+		resp = GetRooms()
+
 	default:
 		resp = MakeErrorResponse("undefined request")
 	}

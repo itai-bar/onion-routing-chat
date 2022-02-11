@@ -22,6 +22,7 @@ const (
 	CODE_UNBAN_FROM_CHAT_ROOM = "10"
 	CODE_SEND_MESSAGE         = "11"
 	CODE_LOAD_MESSAGES        = "12"
+	CODE_GET_ROOMS            = "13"
 	CODE_ERR                  = "99"
 )
 
@@ -102,6 +103,11 @@ type LoadRoomsMessagesRequest struct {
 type LoadRoomsMessagesResponse struct {
 	GeneralResponse
 	Messages []Message `json:"messages"`
+}
+
+type GetRoomsResponse struct {
+	GeneralResponse
+	Rooms []string `json:"rooms"`
 }
 
 type ErrorResponse struct {

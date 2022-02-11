@@ -24,6 +24,7 @@ CODE_BAN_FROM_CHAT_ROOM   = b"09"
 CODE_UNBAN_FROM_CHAT_ROOM = b"10"
 CODE_SEND_MESSAGE         = b"11"
 CODE_LOAD_MESSAGES        = b"12"
+CODE_GET_ROOMS            = b"13"
 CODE_ERR                  = b"99"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
@@ -93,6 +94,9 @@ class Tester:
     def load_messages(self, room_name, amount, offset) -> dict:
         req = { 'roomName' : room_name, 'amount' : amount, 'offset' : offset }
         return self._send_req(CODE_LOAD_MESSAGES, req)
+
+    def get_rooms(self) -> dict:
+        return self._send_req(CODE_GET_ROOMS, None)
     
     def get_update(self, room_name) -> dict:
         while True:
@@ -158,6 +162,8 @@ if __name__ == '__main__':
 
     t = threading.Thread(target=tester_itai.get_update, args=('my_room', ))
     t.start()
+
+    assert tester_dan.get_rooms()['status'] == STATUS_SUCCESS
     
     msg = 'hello this is a message!!!'
     for i in range(30):
