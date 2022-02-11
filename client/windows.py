@@ -32,7 +32,7 @@ class LoginWindow(Screen):
     def btn_login(self):
         resp = client.login(self.username.text, self.password.text)
         if resp['status'] == STATUS_FAILED:
-            popup('login invalid', 'username or password is wrong')
+            popup(resp['title'], resp['info'])
             self.reset()
         else:
             self.reset()
@@ -60,7 +60,7 @@ class SignupWindow(Screen):
         self.reset()
 
         if resp['status'] == STATUS_FAILED:
-            popup('signup invalid', 'something went wrong, try to change the username')
+            popup(resp['title'], resp['info'])
         else:
             self.wm.current = 'login'
             # TODO: go to the next window

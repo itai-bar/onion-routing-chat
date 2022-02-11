@@ -33,8 +33,10 @@ type Message struct {
 }
 
 type GeneralResponse struct {
-	Code   string `json:"code"`
-	Status int    `json:"status"`
+	Code      string `json:"code"`
+	Status    int    `json:"status"`
+	InfoTitle string `json:"title"`
+	Info      string `json:"info"`
 }
 
 type RegisterRequest struct {

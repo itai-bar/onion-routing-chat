@@ -259,7 +259,7 @@ func Unmarshal(code string, data []byte, v interface{}) string {
 	if err != nil {
 		db._revertChanges()
 		logger.Info.Println(err)
-		return Marshal(GeneralResponse{code, STATUS_FAILED})
+		return Marshal(GeneralResponse{code, STATUS_FAILED, "error", "invalid request arguments"})
 	}
 	return ""
 }
