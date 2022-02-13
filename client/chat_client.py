@@ -59,6 +59,9 @@ class ChatClient:
     def login(self, username, password) -> dict:
         req = { 'username' : username, 'password' : password }
         return self._send_req(CODE_LOGIN, req)
+
+    def logout(self) -> dict:
+        return self._send_req(CODE_LOGOUT, None)
     
     def create_room(self, room_name, password) -> dict:
         req = { 'roomName' : room_name, 'password' : password}

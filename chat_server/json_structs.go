@@ -34,10 +34,9 @@ type Message struct {
 }
 
 type GeneralResponse struct {
-	Code      string `json:"code"`
-	Status    int    `json:"status"`
-	InfoTitle string `json:"title"`
-	Info      string `json:"info"`
+	Code   string `json:"code"`
+	Status int    `json:"status"`
+	Info   string `json:"info"`
 }
 
 type RegisterRequest struct {
@@ -108,15 +107,4 @@ type LoadRoomsMessagesResponse struct {
 type GetRoomsResponse struct {
 	GeneralResponse
 	Rooms []string `json:"rooms"`
-}
-
-type ErrorResponse struct {
-	Code string `json:"code"`
-	Err  string `json:"error"`
-}
-
-// functions to insert the resp code automatically
-
-func MakeErrorResponse(err string) *ErrorResponse {
-	return &ErrorResponse{CODE_ERR, err}
 }

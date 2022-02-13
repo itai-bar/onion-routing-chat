@@ -23,12 +23,6 @@ def popup(title, text):
                   size_hint=(None, None), size=(400, 400))
     pop.open()
 
-def popup_case(func):
-    resp = func()
-    if resp['status'] == STATUS_FAILED :
-        popup(resp['title'], resp['info'])
-        
-
 class LoginWindow(Screen):
     username = ObjectProperty(None)
     password = ObjectProperty(None)
@@ -41,12 +35,9 @@ class LoginWindow(Screen):
         resp = client.login(self.username.text, self.password.text)
         self.reset()
         if resp['status'] == STATUS_FAILED:
-            popup(resp['title'], resp['info'])
+            popup('login error', resp['info'])
         else:
             self.wm.current = 'rooms'
-            self.ids.roomsNames.add_widget(Button(text="asd", size_hint_y=None,height=100))
-            
-            
             
     def btn_goto_signup(self):
         self.reset()
@@ -69,7 +60,7 @@ class SignupWindow(Screen):
         self.reset()
 
         if resp['status'] == STATUS_FAILED:
-            popup(resp['title'], resp['info'])
+            popup('signup error', resp['info'])
         else:
             self.wm.current = 'login'
             # TODO: go to the next window
@@ -89,7 +80,7 @@ class RoomsWindow(Screen):
     def set_rooms(self):
         resp = client.get_rooms()
         if resp['status'] == STATUS_FAILED:
-            popup(resp['title'], resp['info'])
+            popup('rooms error', resp['info'])
         else:
             rooms = resp['rooms']
             if rooms:

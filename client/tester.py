@@ -1,3 +1,4 @@
+from cgi import test
 from tor.client import TorClient
 from tor.crypto import Rsa, Aes
 from chat_client import ChatClient, STATUS_SUCCESS, STATUS_FAILED
@@ -17,6 +18,11 @@ if __name__ == '__main__':
     tester_dan.auth()
 
     assert tester_tal.register('tal', 'pass1')['status'] == STATUS_SUCCESS
+    assert tester_tal.login('tal', 'pass1')['status'] == STATUS_SUCCESS
+
+    assert tester_tal.logout()['status'] == STATUS_SUCCESS
+    assert tester_tal.create_room('my_room', 'room_pass')['status'] == STATUS_FAILED 
+
     assert tester_tal.login('tal', 'pass1')['status'] == STATUS_SUCCESS
     assert tester_tal.create_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
     assert tester_tal.create_room('my_room', 'room_pass')['status'] == STATUS_FAILED

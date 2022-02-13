@@ -105,7 +105,6 @@ func HandleClient(conn net.Conn) {
 
 	if !inMap {
 		logger.Err.Println("cookie not in map")
-		// TODO: send error resp
 		return
 	}
 
@@ -114,18 +113,21 @@ func HandleClient(conn net.Conn) {
 
 	if err != nil {
 		logger.Err.Println(err)
-		// TODO: send error resp
 		return
 	}
 
 	// chat server logic, created the response in json
 	jsonResp := HandleRequests(code, decrypted, currentClient)
+	SendResponse(conn, jsonResp, currentClient)
+}
+
+func SendResponse(conn net.Conn, resp string, client *Client) {
+
 	// encrypting the json with the aes key saved for the specific cookie
-	encryptpedResp, err := currentClient.aesObj.Encrypt([]byte(jsonResp))
+	encryptpedResp, err := client.aesObj.Encrypt([]byte(resp))
 	if err != nil {
 		logger.Err.Println(err)
-		// TODO: send error resp
-		return
+		conn.Write(nil)
 	}
 
 	// the network requires a data size header
@@ -143,7 +145,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 	if code != CODE_REGISTER && code != CODE_LOGIN {
 		if client.username == "" {
 			// not logged in
-			return Marshal(MakeErrorResponse("Must log in to use this request"))
+			return Marshal(GeneralResponse{code, STATUS_FAILED, "Must log in to use this request"})
 		}
 	}
 
@@ -164,6 +166,9 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		}
 
 		resp = Login(&req, client)
+
+	case CODE_LOGOUT:
+		resp = Logout(client)
 
 	case CODE_CREATE_CHAT_ROOM:
 		var req CreateChatRoomRequest
@@ -241,7 +246,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		resp = GetRooms()
 
 	default:
-		resp = MakeErrorResponse("undefined request")
+		resp = GeneralResponse{code, STATUS_FAILED, "undefined request"}
 	}
 	db._saveChanges()
 	return Marshal(resp)
@@ -262,7 +267,7 @@ func Unmarshal(code string, data []byte, v interface{}) string {
 	if err != nil {
 		db._revertChanges()
 		logger.Info.Println(err)
-		return Marshal(GeneralResponse{code, STATUS_FAILED, "error", "invalid request arguments"})
+		return Marshal(GeneralResponse{code, STATUS_FAILED, "invalid request arguments"})
 	}
 	return ""
 }
