@@ -1,15 +1,22 @@
 # login window 
 # signup window
+# main menu window
+# create room window
 # rooms window with a room join option
 # chat window
 # room managment for admin only
 
 from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.recycleview import RecycleView
+from kivy.factory import Factory
+from kivy.uix.textinput import TextInput
+from kivy.uix.gridlayout import GridLayout
 
 from chat_client import ChatClient
 from chat_client import STATUS_SUCCESS, STATUS_FAILED
@@ -63,7 +70,6 @@ class SignupWindow(Screen):
             popup('signup error', resp['info'])
         else:
             self.wm.current = 'login'
-            # TODO: go to the next window
 
     def btn_goto_login(self):
         self.wm.current = 'login'
@@ -72,12 +78,35 @@ class SignupWindow(Screen):
         self.username.text = ''
         self.password.text = ''
 
+class PasswordPopup(GridLayout):
+    def __init__(self, roomName, **kwargs):
+        super().__init__(**kwargs)
+        self._roomName = roomName
+        
+    def btn_enter_room(self):
+        resp = client.join_room(self._roomName, self.ids.roomPassword.text)
+        if resp['status'] == STATUS_FAILED:
+            popup('enter room error', resp['info'])
+        else:
+            #self.wm.current = 'login'
+            #GOTO: go to room
+            pass
+
+
 class RoomsWindow(Screen):
     def __init__(self, wm, **kw):
         self.wm = wm
         super().__init__(**kw)
-    
-    def set_rooms(self):
+        
+        for room in range(1,4):
+            show = PasswordPopup(str(room))
+            passwordPopup = Popup(title="Enter " + str(room) + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
+            self.ids.roomsNames.add_widget(Button(text=str(room), size_hint_y=None,height=100, on_release=passwordPopup.open))
+
+    def on_enter(self, *args):
+        self.load_rooms()
+
+    def load_rooms(self):
         resp = client.get_rooms()
         if resp['status'] == STATUS_FAILED:
             popup('rooms error', resp['info'])
@@ -85,5 +114,7 @@ class RoomsWindow(Screen):
             rooms = resp['rooms']
             if rooms:
                 for room in rooms:
-                    self.ids.roomsNames.add_widget(Button(text=str(room), size_hint_y=None,height=100))
-        
+                    show = PasswordPopup(room)
+                    passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.4,0.4), size=(200, 200))
+                    self.ids.roomsNames.add_widget(Button(text=room, size_hint_y=None,height=100, on_release=passwordPopup.open))
+            

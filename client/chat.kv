@@ -1,3 +1,4 @@
+#:import Factory kivy.factory.Factory
 <LoginWindow>:
     name: "login"
 
@@ -108,22 +109,40 @@
                 root.manager.transition.direction = "left"
                 root.btn_goto_login()
 
+<PasswordPopup>:
+    id: PasswordPopup
+    rows:2
+    cols:1
+    GridLayout:
+        rows:2
+        cols:1
+        
+        TextInput:
+            id:roomPassword
+        Button:
+            text:"Enter room"
+            on_release:
+                root.btn_enter_room()
+
 <RoomsWindow>:
     name: "rooms"
 
     roomsNames: roomsNames
     
-    FloatLayout:
+    GridLayout:
+        rows:2
         ScrollView:
             size: root.width, root.height/2
+            do_scroll_x: False
+            do_scroll_y: True
             GridLayout:
-                cols: 1
+                cols:4
                 size_hint_y: None
                 height: self.minimum_height
                 id: roomsNames
-    Button:
-        pos_hint:{"x":0.3,"y":0.25}
-        size_hint: 0.4, 0.1
-        font_size: (root.width**2 + root.height**2) / 13**4
-        text: "Enter Room"
+        Button:
+            size_hint: 0.4, 0.1
+            font_size: (root.width**2 + root.height**2) / 13**4
+            text: "Load rooms"
+            
         
