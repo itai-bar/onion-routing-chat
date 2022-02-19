@@ -121,9 +121,8 @@ class RoomsWindow(Screen):
             rooms = resp['rooms']
             if rooms:
                 for room in rooms:
-                    print("set room:", room)
                     show = PasswordPopup(room)
-                    passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.4,0.4), size=(200, 200))
+                    passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
                     roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=lambda a:passwordPopup.open())
                     self.ids.roomsNames.add_widget(roomBtn)
             

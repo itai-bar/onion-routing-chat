@@ -11,9 +11,22 @@ class ChatApp(App):
     def __init__(self, wm, **kwargs):
         self.wm = wm
         super().__init__(**kwargs)
+        
 
     def build(self):
+        self.prevent_gui_duplication()
+
         return self.wm
+    
+    def prevent_gui_duplication(slef):
+        from kivy.resources import resource_find
+        filename = 'chat.kv'
+        filename = resource_find(filename) or filename
+        if filename in Builder.files:
+            Builder.unload_file(filename)
+        Builder.load_file(filename)
+
+        
 
 class Chat:
     def __init__(self) -> None:
