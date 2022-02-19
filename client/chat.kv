@@ -143,6 +143,9 @@
         Button:
             size_hint: 0.4, 0.1
             font_size: (root.width**2 + root.height**2) / 13**4
-            text: "Load rooms"
+            text: "Refresh rooms"
+            on_release:
+                root.clean_rooms()
+                root.load_rooms()
             
         

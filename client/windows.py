@@ -125,4 +125,6 @@ class RoomsWindow(Screen):
                     passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
                     roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=lambda a:passwordPopup.open())
                     self.ids.roomsNames.add_widget(roomBtn)
-            
+    
+    def clean_rooms(self):
+        self.ids.roomsNames.clear_widgets()
