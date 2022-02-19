@@ -17,12 +17,17 @@ from kivy.uix.recycleview import RecycleView
 from kivy.factory import Factory
 from kivy.uix.textinput import TextInput
 from kivy.uix.gridlayout import GridLayout
+import atexit
 
 from chat_client import ChatClient
 from chat_client import STATUS_SUCCESS, STATUS_FAILED
 
 client = ChatClient()
 client.auth()
+
+def exit_handler():
+    client.logout()
+atexit.register(exit_handler)
 
 def popup(title, text):
     pop = Popup(title=title,
@@ -99,9 +104,11 @@ class RoomsWindow(Screen):
         super().__init__(**kw)
         
         for room in range(1,4):
-            show = PasswordPopup(str(room))
-            passwordPopup = Popup(title="Enter " + str(room) + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
-            self.ids.roomsNames.add_widget(Button(text=str(room), size_hint_y=None,height=100, on_release=passwordPopup.open))
+            roomName = "fake" + str(room)
+            show = PasswordPopup(roomName)
+            passwordPopup = Popup(title="Enter " + roomName + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
+            roomBtn = Button(text=roomName, size_hint_y=None,height=100, on_press=lambda a:passwordPopup.open())
+            self.ids.roomsNames.add_widget(roomBtn)
 
     def on_enter(self, *args):
         self.load_rooms()
@@ -114,7 +121,9 @@ class RoomsWindow(Screen):
             rooms = resp['rooms']
             if rooms:
                 for room in rooms:
+                    print("set room:", room)
                     show = PasswordPopup(room)
                     passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.4,0.4), size=(200, 200))
-                    self.ids.roomsNames.add_widget(Button(text=room, size_hint_y=None,height=100, on_release=passwordPopup.open))
+                    roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=lambda a:passwordPopup.open())
+                    self.ids.roomsNames.add_widget(roomBtn)
             

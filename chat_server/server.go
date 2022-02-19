@@ -36,6 +36,7 @@ var db *ChatDb
 
 var clientsMx sync.Mutex
 var chatRoomsMx sync.Mutex
+var dbMx sync.Mutex
 
 var logger *tor_logger.TorLogger
 
@@ -149,7 +150,6 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		}
 	}
 
-	db._saveCurrentState()
 	switch code {
 	case CODE_REGISTER:
 		var req RegisterRequest
@@ -248,7 +248,6 @@ func HandleRequests(code string, data []byte, client *Client) string {
 	default:
 		resp = GeneralResponse{code, STATUS_FAILED, "undefined request"}
 	}
-	db._saveChanges()
 	return Marshal(resp)
 }
 
@@ -265,7 +264,6 @@ func Marshal(v interface{}) string {
 func Unmarshal(code string, data []byte, v interface{}) string {
 	err := json.Unmarshal(data, &v)
 	if err != nil {
-		db._revertChanges()
 		logger.Info.Println(err)
 		return Marshal(GeneralResponse{code, STATUS_FAILED, "invalid request arguments"})
 	}

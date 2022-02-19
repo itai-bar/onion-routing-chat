@@ -31,16 +31,21 @@ func (db *ChatDb) _deleteRoomMembers(roomID int, roomPassword string, adminID in
 }
 
 func (db *ChatDb) _execNoneResponseQuery(query string, args ...interface{}) error {
+	dbMx.Lock()
+	defer dbMx.Unlock()
+	db._saveCurrentState()
 	stmt, err := db.Prepare(query)
 	if err != nil {
+		db._revertChanges()
 		return err
 	}
+	defer stmt.Close()
 	_, err = stmt.Exec(args...)
 	if err != nil {
+		db._revertChanges()
 		return err
 	}
-
-	stmt.Close()
+	db._saveChanges()
 	return nil
 }
 
@@ -60,7 +65,8 @@ func (db *ChatDb) _getChatRoomID(roomName string) (int, error) {
 	sql := `
 		SELECT ID FROM chats WHERE name = ?;
 	`
-
+	dbMx.Lock()
+	defer dbMx.Unlock()
 	err := db.QueryRow(sql, roomName).Scan(&roomID)
 	if err != nil {
 		return WITHOUT_ID, err // room not found
@@ -75,6 +81,8 @@ func (db *ChatDb) _getUserID(username string) (int, error) {
 		SELECT ID FROM users WHERE username = ?;
 	`
 
+	dbMx.Lock()
+	defer dbMx.Unlock()
 	err := db.QueryRow(sql, username).Scan(&userID)
 	if err != nil {
 		return WITHOUT_ID, err // username not found
@@ -100,27 +108,32 @@ func (db *ChatDb) _saveCurrentState() error {
 	sql := `
 		BEGIN TRANSACTION;
 	`
-	return db._execNoneResponseQuery(sql)
+	_, err := db.Exec(sql)
+	return err
 }
 
 func (db *ChatDb) _saveChanges() error {
 	sql := `
 		END TRANSACTION;
 	`
-	return db._execNoneResponseQuery(sql)
+	_, err := db.Exec(sql)
+	return err
 }
 
 func (db *ChatDb) _revertChanges() error {
 	sql := `
 		ROLLBACK;
 	`
-	return db._execNoneResponseQuery(sql)
+	_, err := db.Exec(sql)
+	return err
 }
 
 // helper to check if x exist
 func (db *ChatDb) _rowExists(query string, args ...interface{}) bool {
 	var exists bool
 	query = fmt.Sprintf("SELECT exists (%s)", query)
+	dbMx.Lock()
+	defer dbMx.Unlock()
 	err := db.QueryRow(query, args...).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
 		logger.Err.Fatalf("error checking if row exists '%s' %v", args, err)
