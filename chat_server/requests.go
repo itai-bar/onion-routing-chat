@@ -148,6 +148,10 @@ func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state int) interface
 		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED, "user not exists"}
 	}
 
+	if db._isUserInRoom(roomID, userID) {
+		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED, "user already in room"}
+	}
+
 	ok, err := db.JoinChatRoomDB(roomID, req.Password, userID, state)
 	if err != nil {
 		logger.Err.Println(err)
@@ -396,6 +400,26 @@ func GetRooms() interface{} {
 		return GeneralResponse{CODE_GET_ROOMS, STATUS_FAILED, "something went wrong"}
 	}
 	return GetRoomsResponse{GeneralResponse{CODE_GET_ROOMS, STATUS_SUCCESS, "got rooms successfuly"}, rooms}
+}
+
+func IsUserInRoom(req *UserInRoomRequest, client *Client) interface{} {
+	roomID, err := db._getChatRoomID(req.RoomName)
+	if err != nil || roomID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_FAILED, "room doesn't exists"}
+	}
+
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_FAILED, "user doesn't exists"}
+	}
+
+	inRoom := db._isUserInRoom(roomID, userID)
+	if inRoom {
+		return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_FAILED, "user in room"}
+	}
+	return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_SUCCESS, "user not in room"}
 }
 
 func RemoveMemberFromChat(roomName string, username string) {

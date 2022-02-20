@@ -18,6 +18,7 @@ from kivy.factory import Factory
 from kivy.uix.textinput import TextInput
 from kivy.uix.gridlayout import GridLayout
 import atexit
+from functools import partial
 
 from chat_client import ChatClient
 from chat_client import STATUS_SUCCESS, STATUS_FAILED
@@ -90,6 +91,7 @@ class PasswordPopup(GridLayout):
         
     def btn_enter_room(self):
         resp = client.join_room(self._roomName, self.ids.roomPassword.text)
+        self.ids.roomPassword.text = ""
         if resp['status'] == STATUS_FAILED:
             popup('enter room error', resp['info'])
         else:
@@ -107,7 +109,7 @@ class RoomsWindow(Screen):
             roomName = "fake" + str(room)
             show = PasswordPopup(roomName)
             passwordPopup = Popup(title="Enter " + roomName + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
-            roomBtn = Button(text=roomName, size_hint_y=None,height=100, on_press=lambda a:passwordPopup.open())
+            roomBtn = Button(text=roomName, size_hint_y=None,height=100, on_press=passwordPopup.open)
             self.ids.roomsNames.add_widget(roomBtn)
 
     def on_enter(self, *args):
@@ -123,8 +125,17 @@ class RoomsWindow(Screen):
                 for room in rooms:
                     show = PasswordPopup(room)
                     passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
-                    roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=lambda a:passwordPopup.open())
+                    roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=partial(self.is_user_in_room, passwordPopup))
                     self.ids.roomsNames.add_widget(roomBtn)
+    
+    def is_user_in_room(self, passwordPopup:Popup, *args):
+        resp = client.is_user_in_room(passwordPopup.content._roomName)
+        if resp['info'] == 'user in room':
+            print("user already in room")
+            pass #pass user to room
+        else:
+            passwordPopup.open()
+
     
     def clean_rooms(self):
         self.ids.roomsNames.clear_widgets()

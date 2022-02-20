@@ -20,6 +20,7 @@ CODE_UNBAN_FROM_CHAT_ROOM = b"10"
 CODE_SEND_MESSAGE         = b"11"
 CODE_LOAD_MESSAGES        = b"12"
 CODE_GET_ROOMS            = b"13"
+CODE_IS_USER_IN_ROOM      = b"14"
 CODE_ERR                  = b"99"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
@@ -97,6 +98,10 @@ class ChatClient:
 
     def get_rooms(self) -> dict:
         return self._send_req(CODE_GET_ROOMS, None)
+    
+    def is_user_in_room(self, room_name) -> dict:
+        req = {'roomName' : room_name}
+        return self._send_req(CODE_IS_USER_IN_ROOM, req)
     
     def get_update(self, room_name) -> dict:
         while True:

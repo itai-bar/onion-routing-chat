@@ -54,6 +54,7 @@ func init() {
 	}
 
 	db = InitChatDb(sqlDb)
+	db.LoadRoomsFromDB()
 }
 
 /*
@@ -244,6 +245,13 @@ func HandleRequests(code string, data []byte, client *Client) string {
 
 	case CODE_GET_ROOMS:
 		resp = GetRooms()
+	
+	case CODE_IS_USER_IN_ROOM:
+		var req UserInRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		} 
+		resp = IsUserInRoom(&req, client)
 
 	default:
 		resp = GeneralResponse{code, STATUS_FAILED, "undefined request"}

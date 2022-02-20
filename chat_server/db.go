@@ -94,6 +94,17 @@ func InitDb(path string) (*sql.DB, error) {
 	return db, nil
 }
 
+func (db *ChatDb) LoadRoomsFromDB() error {
+	rooms, err := db.GetRoomsDB()
+	if err != nil {
+		return err
+	}
+	for _, room := range rooms {
+		chatRooms[room] = &ChatRoom{onlineMembers: make([]*Client, 0)}
+	}
+	return nil
+}
+
 func (db *ChatDb) SendMessageDB(content string, roomID int, senderID int, time time.Time) (bool, error) {
 	sql := `
 		INSERT INTO messages ( senderID, chatID, content, time ) VALUES ( ?, ?, ?, ? );
