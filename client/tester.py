@@ -68,3 +68,6 @@ if __name__ == '__main__':
     offset += 3
     tester_dan.load_messages('my_room', 3, offset)
     
+    tester_dan.logout()
+    tester_itai.logout()
+    tester_tal.logout()

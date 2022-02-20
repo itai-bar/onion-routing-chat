@@ -50,7 +50,7 @@ class LoginWindow(Screen):
         if resp['status'] == STATUS_FAILED:
             popup('login error', resp['info'])
         else:
-            self.wm.current = 'rooms'
+            self.wm.current = 'main'
             
     def btn_goto_signup(self):
         self.reset()
@@ -84,6 +84,21 @@ class SignupWindow(Screen):
         self.username.text = ''
         self.password.text = ''
 
+class CreateRoomPopup(GridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    
+    def btn_create_room(self):
+        resp = client.create_room(self.ids.roomName.text, self.ids.roomPassword.text)
+        self.reset()
+        
+        if resp['status'] == STATUS_FAILED:
+            popup('create room error', resp['info'])
+
+    def reset(self):
+        self.ids.roomPassword.text = ''
+        self.ids.roomName.text = ''
+    
 class PasswordPopup(GridLayout):
     def __init__(self, roomName, **kwargs):
         super().__init__(**kwargs)
@@ -92,12 +107,31 @@ class PasswordPopup(GridLayout):
     def btn_enter_room(self):
         resp = client.join_room(self._roomName, self.ids.roomPassword.text)
         self.ids.roomPassword.text = ""
+
         if resp['status'] == STATUS_FAILED:
             popup('enter room error', resp['info'])
         else:
             #self.wm.current = 'login'
-            #GOTO: go to room
+            #TODO: go to room
             pass
+
+class MainWindow(Screen):
+    def __init__(self, wm, **kw):
+        self.wm = wm
+        super().__init__(**kw)
+    
+    def btn_logout(self):
+        client.logout()
+        self.wm.current = 'login' 
+    
+    def btn_create_room(self):
+        create_room_popup = Popup(title='Create room', 
+                                content=CreateRoomPopup(), 
+                                size_hint=(0.3,0.3), size=(200, 200))
+        create_room_popup.open()
+        
+    def btn_goto_rooms(self):
+        self.wm.current = 'rooms'
 
 
 class RoomsWindow(Screen):
@@ -106,10 +140,10 @@ class RoomsWindow(Screen):
         super().__init__(**kw)
         
         for room in range(1,4):
-            roomName = "fake" + str(room)
-            show = PasswordPopup(roomName)
-            passwordPopup = Popup(title="Enter " + roomName + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
-            roomBtn = Button(text=roomName, size_hint_y=None,height=100, on_press=passwordPopup.open)
+            room_name = "fake" + str(room)
+            show = PasswordPopup(room_name)
+            password_popup = Popup(title=f"Enter {room_name}'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
+            roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=password_popup.open)
             self.ids.roomsNames.add_widget(roomBtn)
 
     def on_enter(self, *args):
@@ -124,7 +158,7 @@ class RoomsWindow(Screen):
             if rooms:
                 for room in rooms:
                     show = PasswordPopup(room)
-                    passwordPopup = Popup(title="Enter " + room + "'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
+                    passwordPopup = Popup(title=f"Enter {room}'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
                     roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=partial(self.is_user_in_room, passwordPopup))
                     self.ids.roomsNames.add_widget(roomBtn)
     

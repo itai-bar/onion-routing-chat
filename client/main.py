@@ -2,7 +2,7 @@ from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager
 
-from windows import LoginWindow, RoomsWindow, SignupWindow
+from windows import LoginWindow, MainWindow, RoomsWindow, SignupWindow
 
 class WindowManager(ScreenManager):
     pass
@@ -27,7 +27,6 @@ class ChatApp(App):
         Builder.load_file(filename)
 
         
-
 class Chat:
     def __init__(self) -> None:
         kv = Builder.load_file('chat.kv')
@@ -35,7 +34,9 @@ class Chat:
 
         self._screens = [LoginWindow(self.window_manager, name='login'),
                          SignupWindow(self.window_manager, name='signup'),
-                         RoomsWindow(self.window_manager, name='rooms')] 
+                         RoomsWindow(self.window_manager, name='rooms'),
+                         MainWindow(self.window_manager, name='main')] 
+
         for screen in self._screens:
             self.window_manager.add_widget(screen)
         

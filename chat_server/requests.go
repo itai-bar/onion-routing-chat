@@ -60,6 +60,10 @@ func Logout(client *Client) interface{} {
 
 // creates a new room and joins the client as the admin
 func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
+	if req.Password == "" {
+		return GeneralResponse{CODE_CREATE_CHAT_ROOM, STATUS_FAILED, "password cant be empty!"}
+	}
+
 	adminID, err := db._getUserID(client.username)
 	if err != nil {
 		logger.Err.Println(err)
