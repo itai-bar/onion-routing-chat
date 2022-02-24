@@ -145,19 +145,10 @@
 
     GridLayout:
         rows: 3
+        
         AnchorLayout:
             anchor_x: 'center'
             anchor_y: 'bottom'
-            Button:
-                size_hint: 0.4, 0.7
-                font_size: (root.width**2 + root.height**2) / 13**4
-                text:"Logout"
-                on_release:
-                    root.manager.transition.direction = "left"
-                    root.btn_logout()
-        AnchorLayout:
-            anchor_x: 'center'
-            anchor_y: 'center'
             Button:
                 size_hint: 0.4, 0.7
                 font_size: (root.width**2 + root.height**2) / 13**4
@@ -167,13 +158,23 @@
                     root.btn_goto_rooms()
         AnchorLayout:
             anchor_x: 'center'
-            anchor_y: 'top'
+            anchor_y: 'center'
             Button:
                 size_hint: 0.4, 0.7
                 font_size: (root.width**2 + root.height**2) / 13**4
                 text:"Create Room"
                 on_release:
                     root.btn_create_room()
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
+            Button:
+                size_hint: 0.2, 0.35
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Logout"
+                on_release:
+                    root.manager.transition.direction = "left"
+                    root.btn_logout()
 
 <RoomsWindow>:
     name: "rooms"
