@@ -7,6 +7,7 @@
 # room managment for admin only
 
 from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
@@ -43,7 +44,14 @@ class LoginWindow(Screen):
     def __init__(self, wm, **kw):
         self.wm = wm
         super().__init__(**kw)
-
+    
+    def on_pre_enter(self, *args):
+        Window.bind(on_key_down=self._on_key_down)
+        
+    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
+        if (self.password.focus or self.username.focus) and keycode == 40: # 40 - Enter key pressed
+            self.btn_login()
+    
     def btn_login(self):
         resp = client.login(self.username.text, self.password.text)
         self.reset()
@@ -67,6 +75,14 @@ class SignupWindow(Screen):
     def __init__(self, wm, **kw):
         self.wm = wm
         super().__init__(**kw)
+    
+    def on_pre_enter(self, *args):
+        Window.bind(on_key_down=self._on_key_down)
+        
+    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
+        if (self.password.focus or self.username.focus) and keycode == 40: # 40 - Enter key pressed
+            self.btn_signup()
+
 
     def btn_signup(self):
         resp = client.register(self.username.text, self.password.text)
@@ -88,6 +104,13 @@ class CreateRoomPopup(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
     
+    def on_pre_enter(self, *args):
+        Window.bind(on_key_down=self._on_key_down)
+        
+    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
+        if (self.roomName.focus or self.roomPassword.focus) and keycode == 40: # 40 - Enter key pressed
+            self.btn_create_room()
+
     def btn_create_room(self):
         resp = client.create_room(self.ids.roomName.text, self.ids.roomPassword.text)
         self.reset()
@@ -103,6 +126,13 @@ class PasswordPopup(GridLayout):
     def __init__(self, roomName, **kwargs):
         super().__init__(**kwargs)
         self._roomName = roomName
+    
+    def on_pre_enter(self, *args):
+        Window.bind(on_key_down=self._on_key_down)
+        
+    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
+        if self.roomPassword.focus and keycode == 40: # 40 - Enter key pressed
+            self.btn_enter_room()
         
     def btn_enter_room(self):
         resp = client.join_room(self._roomName, self.ids.roomPassword.text)

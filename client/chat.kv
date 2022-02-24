@@ -102,8 +102,8 @@
         Button:
             pos_hint:{"x":0.3,"y":0.25}
             size_hint: 0.4, 0.1
-            font_size: (root.width**2 + root.height**2) / 13**4
-            text: "Go to login page"
+            font_size: (root.width**2 + root.height**2) / 17**4
+            text: "Already have an account? Login"
             on_release:
                 root.manager.transition.direction = "left"
                 root.btn_goto_login()
@@ -118,6 +118,7 @@
         
         TextInput:
             id:roomPassword
+            password:True
         Button:
             text:"Enter room"
             on_release:
@@ -130,11 +131,22 @@
     GridLayout:
         rows:3
         cols:1
-
-        TextInput:
-            id:roomName
-        TextInput:
-            id:roomPassword
+        GridLayout:
+            
+            cols:2
+            Label:
+                text:'Name:'
+            TextInput:
+                id:roomName
+                multiline: False
+                write_tab: False
+            Label:
+                text:'Password:'
+            TextInput:
+                id:roomPassword
+                password:True
+                multiline: False
+                write_tab: False
         Button:
             text:"Enter room"
             on_release:
