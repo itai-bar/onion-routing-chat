@@ -138,15 +138,10 @@ class RoomsWindow(Screen):
     def __init__(self, wm, **kw):
         self.wm = wm
         super().__init__(**kw)
-        
-        for room in range(1,4):
-            room_name = "fake" + str(room)
-            show = PasswordPopup(room_name)
-            password_popup = Popup(title=f"Enter {room_name}'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
-            roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=password_popup.open)
-            self.ids.roomsNames.add_widget(roomBtn)
 
     def on_enter(self, *args):
+        self.clean_rooms()
+        self.set_fake_rooms(7)
         self.load_rooms()
 
     def load_rooms(self):
@@ -173,3 +168,14 @@ class RoomsWindow(Screen):
     
     def clean_rooms(self):
         self.ids.roomsNames.clear_widgets()
+    
+    def go_to_main(self):
+        self.wm.current = 'main'
+    
+    def set_fake_rooms(self, amount_of_fakes):
+        for room in range(1, amount_of_fakes+1):
+            room_name = "fake" + str(room)
+            show = PasswordPopup(room_name)
+            password_popup = Popup(title=f"Enter {room_name}'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
+            roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=password_popup.open)
+            self.ids.roomsNames.add_widget(roomBtn)

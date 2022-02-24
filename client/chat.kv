@@ -130,7 +130,7 @@
     GridLayout:
         rows:3
         cols:1
-        
+
         TextInput:
             id:roomName
         TextInput:
@@ -145,28 +145,35 @@
 
     GridLayout:
         rows: 3
-        Button:
-            size_hint: 0.4, 0.1
-            font_size: (root.width**2 + root.height**2) / 13**4
-            text:"Logout"
-            on_release:
-                root.manager.transition.direction = "left"
-                root.btn_logout()
-
-        Button:
-            size_hint: 0.4, 0.1
-            font_size: (root.width**2 + root.height**2) / 13**4
-            text:"Room List"
-            on_release:
-                root.manager.transition.direction = "right"
-                root.btn_goto_rooms()
-
-        Button:
-            size_hint: 0.4, 0.1
-            font_size: (root.width**2 + root.height**2) / 13**4
-            text:"Create Room"
-            on_release:
-                root.btn_create_room()
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'bottom'
+            Button:
+                size_hint: 0.4, 0.7
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Logout"
+                on_release:
+                    root.manager.transition.direction = "left"
+                    root.btn_logout()
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
+            Button:
+                size_hint: 0.4, 0.7
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Room List"
+                on_release:
+                    root.manager.transition.direction = "right"
+                    root.btn_goto_rooms()
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'top'
+            Button:
+                size_hint: 0.4, 0.7
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Create Room"
+                on_release:
+                    root.btn_create_room()
 
 <RoomsWindow>:
     name: "rooms"
@@ -175,21 +182,36 @@
     
     GridLayout:
         rows:2
-        ScrollView:
-            size: root.width, root.height/2
-            do_scroll_x: False
-            do_scroll_y: True
-            GridLayout:
-                cols:4
-                size_hint_y: None
-                height: self.minimum_height
-                id: roomsNames
-        Button:
-            size_hint: 0.4, 0.1
-            font_size: (root.width**2 + root.height**2) / 13**4
-            text: "Refresh rooms"
-            on_release:
-                root.clean_rooms()
-                root.load_rooms()
-            
-        
+        GridLayout:
+            rows:1
+            ScrollView:
+                size: root.width, root.height/2
+                do_scroll_x: False
+                do_scroll_y: True
+                GridLayout:
+                    cols:4
+                    size_hint_y: None
+                    height: self.minimum_height
+                    id: roomsNames
+        GridLayout:
+            cols:2
+            AnchorLayout:
+                anchor_x: 'left'
+                anchor_y: 'bottom'
+                Button:
+                    size_hint: 1.3, 0.2
+                    size:root.width*0.5, root.height*0.25
+                    text: "Refresh rooms"
+                    on_release:
+                        root.clean_rooms()
+                        root.load_rooms()
+            AnchorLayout:
+                anchor_x: 'right'
+                anchor_y: 'bottom'
+                Button:
+                    size_hint: 0.7, 0.2
+                    text: "Back"
+                    size:root.width*0.25, root.height*0.25
+                    on_release:
+                        root.manager.transition.direction = "left"
+                        root.go_to_main()
