@@ -7,7 +7,6 @@
 # room managment for admin only
 
 from kivy.uix.screenmanager import Screen, ScreenManager
-from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
@@ -45,13 +44,6 @@ class LoginWindow(Screen):
         self.wm = wm
         super().__init__(**kw)
     
-    def on_pre_enter(self, *args):
-        Window.bind(on_key_down=self._on_key_down)
-        
-    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        if (self.password.focus or self.username.focus) and keycode == 40: # 40 - Enter key pressed
-            self.btn_login()
-    
     def btn_login(self):
         resp = client.login(self.username.text, self.password.text)
         self.reset()
@@ -75,14 +67,6 @@ class SignupWindow(Screen):
     def __init__(self, wm, **kw):
         self.wm = wm
         super().__init__(**kw)
-    
-    def on_pre_enter(self, *args):
-        Window.bind(on_key_down=self._on_key_down)
-        
-    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        if (self.password.focus or self.username.focus) and keycode == 40: # 40 - Enter key pressed
-            self.btn_signup()
-
 
     def btn_signup(self):
         resp = client.register(self.username.text, self.password.text)
@@ -103,13 +87,6 @@ class SignupWindow(Screen):
 class CreateRoomPopup(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
-    def on_pre_enter(self, *args):
-        Window.bind(on_key_down=self._on_key_down)
-        
-    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        if (self.roomName.focus or self.roomPassword.focus) and keycode == 40: # 40 - Enter key pressed
-            self.btn_create_room()
 
     def btn_create_room(self):
         resp = client.create_room(self.ids.roomName.text, self.ids.roomPassword.text)
@@ -123,16 +100,11 @@ class CreateRoomPopup(GridLayout):
         self.ids.roomName.text = ''
     
 class PasswordPopup(GridLayout):
-    def __init__(self, roomName, **kwargs):
+    def __init__(self, wm, PopupInstance : Popup, roomName : str, **kwargs):
         super().__init__(**kwargs)
         self._roomName = roomName
-    
-    def on_pre_enter(self, *args):
-        Window.bind(on_key_down=self._on_key_down)
-        
-    def _on_key_down(self, instance, keyboard, keycode, text, modifiers):
-        if self.roomPassword.focus and keycode == 40: # 40 - Enter key pressed
-            self.btn_enter_room()
+        self.wm = wm
+        self.PopupInstance = PopupInstance
         
     def btn_enter_room(self):
         resp = client.join_room(self._roomName, self.ids.roomPassword.text)
@@ -140,7 +112,8 @@ class PasswordPopup(GridLayout):
 
         if resp['status'] == STATUS_FAILED:
             popup('enter room error', resp['info'])
-        else:
+        else:#execute function on Enter-key
+            self.PopupInstance.dismiss()
             #self.wm.current = 'login'
             #TODO: go to room
             pass
@@ -182,8 +155,8 @@ class RoomsWindow(Screen):
             rooms = resp['rooms']
             if rooms:
                 for room in rooms:
-                    show = PasswordPopup(room)
-                    passwordPopup = Popup(title=f"Enter {room}'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
+                    passwordPopup = Popup(title=f"Enter {room}'s password", size_hint=(0.3,0.3), size=(200, 200))
+                    passwordPopup.content = PasswordPopup(self.wm, passwordPopup, room)
                     roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=partial(self.is_user_in_room, passwordPopup))
                     self.ids.roomsNames.add_widget(roomBtn)
     
@@ -195,7 +168,6 @@ class RoomsWindow(Screen):
         else:
             passwordPopup.open()
 
-    
     def clean_rooms(self):
         self.ids.roomsNames.clear_widgets()
     
@@ -205,7 +177,7 @@ class RoomsWindow(Screen):
     def set_fake_rooms(self, amount_of_fakes):
         for room in range(1, amount_of_fakes+1):
             room_name = "fake" + str(room)
-            show = PasswordPopup(room_name)
-            password_popup = Popup(title=f"Enter {room_name}'s password", content=show, size_hint=(0.3,0.3), size=(200, 200))
-            roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=password_popup.open)
+            passwordPopup = Popup(title=f"Enter {room}'s password", size_hint=(0.3,0.3), size=(200, 200))
+            passwordPopup.content = PasswordPopup(self.wm, passwordPopup, room)
+            roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=passwordPopup.open)
             self.ids.roomsNames.add_widget(roomBtn)
