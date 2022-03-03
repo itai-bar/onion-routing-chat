@@ -238,3 +238,41 @@
                     on_release:
                         root.manager.transition.direction = "left"
                         root.go_to_main()
+
+<ChatWindow>:
+    name: "chat"
+
+    GridLayout:
+        rows:2
+        GridLayout: # Buttons - Quit&Members&Back
+            row_force_default: True
+            row_default_height:root.height*0.1
+            cols:3
+            Button:
+                size_hint: 0.15,0.1
+                text:'Quit room'
+                on_release:
+                    root.quit_room()
+            Button:
+                size_hint: .4,.1
+                text:'Room members'
+                #on_release: #TODO:open list of users with kick\ban options(maybe add online members)
+            Button:
+                size_hint: 0.25,1
+                text: "Back"
+                on_release:
+                    root.go_to_rooms()
+        FloatLayout:#TODO: update messages
+            row_force_default: True
+            row_default_height:root.height*0.15
+            TextInput:
+                id:message
+                pos_hint: {"x":0.01, "y":0.025}
+                size_hint: 0.8, 0.15
+                multiline: False
+                on_text_validate:root.send_message()
+            Button:
+                pos_hint: {"x":0.83, "y":0.02}
+                size_hint: 0.15, 0.155
+                text:'Send'
+                on_release:root.send_message()

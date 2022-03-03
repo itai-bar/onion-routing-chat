@@ -1,11 +1,16 @@
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager
+from kivy.event import EventDispatcher
+from kivy.properties import ObjectProperty
 
-from windows import LoginWindow, MainWindow, RoomsWindow, SignupWindow
+from windows import LoginWindow, MainWindow, RoomsWindow, SignupWindow, ChatWindow
+
+class MyState(EventDispatcher):
+    current_room = ''
 
 class WindowManager(ScreenManager):
-    pass
+    statedata = ObjectProperty(MyState())
 
 class ChatApp(App):
     def __init__(self, wm, **kwargs):
@@ -35,7 +40,8 @@ class Chat:
         self._screens = [LoginWindow(self.window_manager, name='login'),
                          SignupWindow(self.window_manager, name='signup'),
                          RoomsWindow(self.window_manager, name='rooms'),
-                         MainWindow(self.window_manager, name='main')] 
+                         MainWindow(self.window_manager, name='main'),
+                         ChatWindow(self.window_manager, name='chat')] 
 
         for screen in self._screens:
             self.window_manager.add_widget(screen)

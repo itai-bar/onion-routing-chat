@@ -14,14 +14,12 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.recycleview import RecycleView
-from kivy.factory import Factory
 from kivy.uix.textinput import TextInput
 from kivy.uix.gridlayout import GridLayout
 import atexit
 from functools import partial
 
-from chat_client import ChatClient
-from chat_client import STATUS_SUCCESS, STATUS_FAILED
+from chat_client import ChatClient, STATUS_FAILED
 
 client = ChatClient()
 client.auth()
@@ -112,11 +110,10 @@ class PasswordPopup(GridLayout):
 
         if resp['status'] == STATUS_FAILED:
             popup('enter room error', resp['info'])
-        else:#execute function on Enter-key
+        else:
             self.PopupInstance.dismiss()
-            #self.wm.current = 'login'
-            #TODO: go to room
-            pass
+            self.manager.statedata.current_room = self._roomName
+            self.wm.current = 'chat'
 
 class MainWindow(Screen):
     def __init__(self, wm, **kw):
@@ -163,8 +160,8 @@ class RoomsWindow(Screen):
     def is_user_in_room(self, passwordPopup:Popup, *args):
         resp = client.is_user_in_room(passwordPopup.content._roomName)
         if resp['info'] == 'user in room':
-            print("user already in room")
-            pass #pass user to room
+            self.manager.statedata.current_room = passwordPopup.content._roomName
+            self.wm.current = 'chat'
         else:
             passwordPopup.open()
 
@@ -181,3 +178,25 @@ class RoomsWindow(Screen):
             passwordPopup.content = PasswordPopup(self.wm, passwordPopup, room)
             roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=passwordPopup.open)
             self.ids.roomsNames.add_widget(roomBtn)
+
+class ChatWindow(Screen):
+    def __init__(self, wm, **kw):
+        self.wm = wm
+        super().__init__(**kw)
+
+    def go_to_rooms(self):
+        self.wm.current = 'rooms'
+
+    def quit_room(self):
+        #TODO: client.quit_room
+        self.wm.current = 'rooms'
+    
+    def on_leave(self, *args):
+        self.manager.statedata.current_room = ''
+
+    def reset(self):
+        self.ids.message.text = ''
+        
+    def send_message(self):
+        resp = client.send_message(self.manager.statedata.current_room, self.ids.message.text)
+        self.reset()
