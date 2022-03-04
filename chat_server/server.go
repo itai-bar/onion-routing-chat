@@ -252,6 +252,13 @@ func HandleRequests(code string, data []byte, client *Client) string {
 			return errMsg
 		} 
 		resp = IsUserInRoom(&req, client)
+	
+	case CODE_QUIT_ROOM:
+		var req QuitRoomRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		} 
+		resp = QuitRoom(&req, client)
 
 	default:
 		resp = GeneralResponse{code, STATUS_FAILED, "undefined request"}
