@@ -24,6 +24,7 @@ const (
 	CODE_LOAD_MESSAGES        = "12"
 	CODE_GET_ROOMS            = "13"
 	CODE_IS_USER_IN_ROOM      = "14"
+	CODE_QUIT_ROOM            = "15"
 	CODE_ERR                  = "99"
 )
 
@@ -101,6 +102,10 @@ type LoadRoomsMessagesRequest struct {
 }
 
 type UserInRoomRequest struct {
+	RoomName string `json:"roomName"`
+}
+
+type QuitRoomRequest struct {
 	RoomName string `json:"roomName"`
 }
 

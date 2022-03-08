@@ -426,6 +426,29 @@ func IsUserInRoom(req *UserInRoomRequest, client *Client) interface{} {
 	return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_SUCCESS, "user not in room"}
 }
 
+func QuitRoom(req *QuitRoomRequest, client *Client) interface{} {
+	roomID, err := db._getChatRoomID(req.RoomName)
+	if err != nil || roomID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "room doesn't exists"}
+	}
+
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "user doesn't exists"}
+	}
+
+	if db._isUserInRoom(roomID, userID) {
+		success,  err := db.QuitRoomDB(roomID, userID)
+		if err != nil || success == false {
+			return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "something went wrong, maybe user not in room"}
+		}
+		return GeneralResponse{CODE_QUIT_ROOM, STATUS_SUCCESS, "quited successfully"}
+	}
+	return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "user not in room"}
+}
+
 func RemoveMemberFromChat(roomName string, username string) {
 	chatRoomsMx.Lock()
 
