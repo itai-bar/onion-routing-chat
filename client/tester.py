@@ -54,7 +54,7 @@ if __name__ == '__main__':
     assert tester_dan.join_room("my_room", "room_pass")['status'] == STATUS_FAILED
     assert tester_dan.join_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
 
-    t = threading.Thread(target=tester_itai.get_update, args=('my_room', ))
+    t = threading.Thread(target=tester_itai.get_updates, args=('my_room', ))
     t.start()
 
     assert tester_dan.get_rooms()['status'] == STATUS_SUCCESS

@@ -43,7 +43,6 @@
             font_size: (root.width**2 + root.height**2) / 13**4
             text: "Login"
             on_release:
-                root.manager.transition.direction = "up"
                 root.btn_login()
 
         Button:
@@ -52,7 +51,6 @@
             font_size: (root.width**2 + root.height**2) / 17**4
             text: "Don't have an Account? Create One"
             on_release:
-                root.manager.transition.direction = "right"
                 root.btn_goto_signup()
 
 <SignupWindow>:
@@ -100,7 +98,6 @@
             font_size: (root.width**2 + root.height**2) / 13**4
             text: "Signup"
             on_release:
-                root.manager.transition.direction = "up"
                 root.btn_signup()
 
         Button:
@@ -109,7 +106,6 @@
             font_size: (root.width**2 + root.height**2) / 17**4
             text: "Already have an account? Login"
             on_release:
-                root.manager.transition.direction = "left"
                 root.btn_goto_login()
 
 <PasswordPopup>:
@@ -175,7 +171,6 @@
                 font_size: (root.width**2 + root.height**2) / 13**4
                 text:"Room List"
                 on_release:
-                    root.manager.transition.direction = "right"
                     root.btn_goto_rooms()
         AnchorLayout:
             anchor_x: 'center'
@@ -194,7 +189,6 @@
                 font_size: (root.width**2 + root.height**2) / 13**4
                 text:"Logout"
                 on_release:
-                    root.manager.transition.direction = "left"
                     root.btn_logout()
 
 <RoomsWindow>:
@@ -236,14 +230,14 @@
                     text: "Back"
                     size:root.width*0.25, root.height*0.25
                     on_release:
-                        root.manager.transition.direction = "left"
                         root.go_to_main()
 
 <ChatWindow>:
     name: "chat"
 
     GridLayout:
-        rows:2
+        rows:3
+
         GridLayout: # Buttons - Quit&Members&Back
             row_force_default: True
             row_default_height:root.height*0.1
@@ -262,7 +256,29 @@
                 text: "Back"
                 on_release:
                     root.go_to_rooms()
-        FloatLayout:#TODO: update messages
+
+        GridLayout: 
+            row_force_default: True
+            row_default_height:root.height
+            cols:1
+
+            RecycleView:
+                pos_hint: {"x":0.01, "y":0.7}
+                data: root.messages
+                scroll_y: 0
+                text_size: self.size
+                valign: "middle"
+                viewclass: "Label"
+
+                RecycleBoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_size[1]
+                    default_size_hint: 1, None
+                    default_size: None, None
+            
+
+        FloatLayout:
             row_force_default: True
             row_default_height:root.height*0.15
             TextInput:

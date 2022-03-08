@@ -104,6 +104,10 @@ class ChatClient:
         return self._send_req(CODE_IS_USER_IN_ROOM, req)
     
     def get_update(self, room_name) -> dict:
+        req = { 'roomName' : room_name }
+        return self._send_req(CODE_UPDATE, req)
+
+    def get_updates(self, room_name):
         while True:
             req = { 'roomName' : room_name }
             self._send_req(CODE_UPDATE, req)

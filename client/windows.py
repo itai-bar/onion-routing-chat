@@ -6,9 +6,11 @@
 # chat window
 # room managment for admin only
 
+from concurrent.futures import thread
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
+from kivy.properties import ListProperty
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -21,8 +23,18 @@ from functools import partial
 
 from chat_client import ChatClient, STATUS_FAILED
 
+# parsing time
+from dateutil import parser
+import datetime as dt
+
+from kthread import KThread
+
 client = ChatClient()
 client.auth()
+
+def message_to_str(msg: dict) -> str:
+    t = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
+    return f"{t} | {msg['sender']} - {msg['content']}"
 
 def exit_handler():
     client.logout()
@@ -112,7 +124,7 @@ class PasswordPopup(GridLayout):
             popup('enter room error', resp['info'])
         else:
             self.PopupInstance.dismiss()
-            self.manager.statedata.current_room = self._roomName
+            # self.manager.statedata.current_room = self._roomName
             self.wm.current = 'chat'
 
 class MainWindow(Screen):
@@ -141,7 +153,6 @@ class RoomsWindow(Screen):
 
     def on_enter(self, *args):
         self.clean_rooms()
-        self.set_fake_rooms(7)
         self.load_rooms()
 
     def load_rooms(self):
@@ -159,8 +170,9 @@ class RoomsWindow(Screen):
     
     def is_user_in_room(self, passwordPopup:Popup, *args):
         resp = client.is_user_in_room(passwordPopup.content._roomName)
+        self.manager.statedata.current_room = passwordPopup.content._roomName
+
         if resp['info'] == 'user in room':
-            self.manager.statedata.current_room = passwordPopup.content._roomName
             self.wm.current = 'chat'
         else:
             passwordPopup.open()
@@ -180,18 +192,44 @@ class RoomsWindow(Screen):
             self.ids.roomsNames.add_widget(roomBtn)
 
 class ChatWindow(Screen):
+    messages = ListProperty()
+
     def __init__(self, wm, **kw):
         self.wm = wm
+        self.update_thread = KThread(target=self.update_messages)
         super().__init__(**kw)
 
+    def __del__(self):
+        self.update_thread.kill()
+
+    def update_messages(self):
+        while True:
+            msgs = client.get_update(self.manager.statedata.current_room)
+            print(f'got messages from update req: {msgs}')
+            if msgs['messages'] != None:
+                for msg in msgs['messages']:
+                    self.messages.append({'text' : message_to_str(msg)})
+
+    def on_enter(self, *args):
+        new_msgs = client.load_messages(self.manager.statedata.current_room, 50, 0)
+
+        if new_msgs['messages'] != None:
+            for msg in new_msgs['messages']:
+                self.messages.append({'text' : message_to_str(msg)})
+        
+        self.update_thread.start()
+
     def go_to_rooms(self):
+        self.update_thread.kill()
         self.wm.current = 'rooms'
 
     def quit_room(self):
         #TODO: client.quit_room
+        self.update_thread.kill()
         self.wm.current = 'rooms'
     
     def on_leave(self, *args):
+        self.update_thread.kill()
         self.manager.statedata.current_room = ''
 
     def reset(self):
@@ -199,4 +237,5 @@ class ChatWindow(Screen):
         
     def send_message(self):
         resp = client.send_message(self.manager.statedata.current_room, self.ids.message.text)
+
         self.reset()
