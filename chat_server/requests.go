@@ -298,7 +298,7 @@ func SendMessage(req *SendMessageRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED, "sender doesn't exists"}
 	}
 
-	inRoom := db._isUserInRoom(roomID, roomID)
+	inRoom := db._isUserInRoom(roomID, userID)
 	if !inRoom {
 		logger.Err.Println("user not in room")
 		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED, "sender not in room"}
@@ -346,7 +346,7 @@ func UpdateMessages(req *UpdateMessagesRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_UPDATE, STATUS_FAILED, "user not exists"}
 	}
 
-	inRoom := db._isUserInRoom(roomID, roomID)
+	inRoom := db._isUserInRoom(roomID, userID)
 	if !inRoom {
 		logger.Err.Println("user not in room")
 		return GeneralResponse{CODE_UPDATE, STATUS_FAILED, "user not in room"}
@@ -382,7 +382,7 @@ func LoadMessages(req *LoadRoomsMessagesRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_LOAD_MESSAGES, STATUS_FAILED, "user doesn't exists"}
 	}
 
-	inRoom := db._isUserInRoom(roomID, roomID)
+	inRoom := db._isUserInRoom(roomID, userID)
 	if !inRoom {
 		logger.Err.Println("user not in room")
 		return GeneralResponse{CODE_LOAD_MESSAGES, STATUS_FAILED, "user not in room"}

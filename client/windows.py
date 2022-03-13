@@ -172,6 +172,7 @@ class RoomsWindow(Screen):
         resp = client.is_user_in_room(passwordPopup.content._roomName)
         self.manager.statedata.current_room = passwordPopup.content._roomName
 
+        print("resp['info']:", resp['info'])
         if resp['info'] == 'user in room':
             self.wm.current = 'chat'
         else:
@@ -193,43 +194,42 @@ class RoomsWindow(Screen):
 
 class ChatWindow(Screen):
     messages = ListProperty()
-
+    
     def __init__(self, wm, **kw):
         self.wm = wm
-        self.update_thread = KThread(target=self.update_messages)
+        self.update_thread = None
         super().__init__(**kw)
-
-    def __del__(self):
-        self.update_thread.kill()
 
     def update_messages(self):
         while True:
+            print("wait for update...")
             msgs = client.get_update(self.manager.statedata.current_room)
             print(f'got messages from update req: {msgs}')
             if msgs['messages'] != None:
-                for msg in msgs['messages']:
+                for msg in msgs['messages'][::-1]:  # reverse messages for better user experience
                     self.messages.append({'text' : message_to_str(msg)})
 
     def on_enter(self, *args):
+        print("current room", self.manager.statedata.current_room)
         new_msgs = client.load_messages(self.manager.statedata.current_room, 50, 0)
 
         if new_msgs['messages'] != None:
-            for msg in new_msgs['messages']:
+            for msg in new_msgs['messages'][::-1]: # reverse messages for better user experience
                 self.messages.append({'text' : message_to_str(msg)})
         
+        self.update_thread = KThread(target=self.update_messages)
         self.update_thread.start()
 
     def go_to_rooms(self):
-        self.update_thread.kill()
         self.wm.current = 'rooms'
 
     def quit_room(self):
         #TODO: client.quit_room
-        self.update_thread.kill()
         self.wm.current = 'rooms'
     
     def on_leave(self, *args):
         self.update_thread.kill()
+        self.messages = []
         self.manager.statedata.current_room = ''
 
     def reset(self):

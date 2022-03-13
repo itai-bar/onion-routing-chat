@@ -259,7 +259,7 @@
 
         GridLayout: 
             row_force_default: True
-            row_default_height:root.height
+            row_default_height:root.height*0.6
             cols:1
 
             RecycleView:
@@ -286,7 +286,9 @@
                 pos_hint: {"x":0.01, "y":0.025}
                 size_hint: 0.8, 0.15
                 multiline: False
-                on_text_validate:root.send_message()
+                on_text_validate:
+                    root.send_message()
+                    
             Button:
                 pos_hint: {"x":0.83, "y":0.02}
                 size_hint: 0.15, 0.155
