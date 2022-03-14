@@ -323,6 +323,7 @@ func SendMessage(req *SendMessageRequest, client *Client) interface{} {
 	newMsg := Message{req.RoomName, req.Content, client.username, messageTime}
 
 	// notifying every member of the room about the new message
+	logger.Info.Println(chatRooms[req.RoomName].onlineMembers)
 	for _, member := range chatRooms[req.RoomName].onlineMembers {
 		member.Lock()
 		member.messages = append(member.messages, newMsg)
@@ -424,6 +425,15 @@ func IsUserInRoom(req *UserInRoomRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_FAILED, "user in room"}
 	}
 	return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_SUCCESS, "user not in room"}
+}
+
+func CancelUpdate(client *Client) interface{} {
+	for _, clientIterator := range clients {
+		if clientIterator.username == client.username {
+			clientIterator.cond.Signal()
+		}
+	}
+	return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_SUCCESS, "released cancel successfully"}
 }
 
 func QuitRoom(req *QuitRoomRequest, client *Client) interface{} {

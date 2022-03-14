@@ -252,6 +252,9 @@ func HandleRequests(code string, data []byte, client *Client) string {
 			return errMsg
 		} 
 		resp = IsUserInRoom(&req, client)
+
+	case CODE_CANCEL_UPDATE:
+		resp = CancelUpdate(client)
 	
 	case CODE_QUIT_ROOM:
 		var req QuitRoomRequest

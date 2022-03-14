@@ -27,7 +27,7 @@ from chat_client import ChatClient, STATUS_FAILED
 from dateutil import parser
 import datetime as dt
 
-from kthread import KThread
+import threading
 
 client = ChatClient()
 client.auth()
@@ -37,6 +37,9 @@ def message_to_str(msg: dict) -> str:
     return f"{t} | {msg['sender']} - {msg['content']}"
 
 def exit_handler():
+    print("Exists")
+    ChatWindow.getting_updates = False
+    client.cancel_update()
     client.logout()
 atexit.register(exit_handler)
 
@@ -194,22 +197,29 @@ class RoomsWindow(Screen):
 
 class ChatWindow(Screen):
     messages = ListProperty()
+    getting_updates = False
     
     def __init__(self, wm, **kw):
         self.wm = wm
         self.update_thread = None
-        super().__init__(**kw)
+        super().__init__(**kw)            
 
     def update_messages(self):
-        while True:
-            print("wait for update...")
-            msgs = client.get_update(self.manager.statedata.current_room)
+        #TODO: fix bug on first message sending' it doesn't shown on sender side(maybe bug in client)
+        #TODO: add room members button functionallity
+        room_for_thread = self.manager.statedata.current_room
+        while ChatWindow.getting_updates:
+            print("wait for update in room", room_for_thread)
+            msgs = client.get_update(room_for_thread)
             print(f'got messages from update req: {msgs}')
             if msgs['messages'] != None:
                 for msg in msgs['messages'][::-1]:  # reverse messages for better user experience
                     self.messages.append({'text' : message_to_str(msg)})
+        print("Thread breaked!")
 
     def on_enter(self, *args):
+        ChatWindow.getting_updates = True
+
         print("current room", self.manager.statedata.current_room)
         new_msgs = client.load_messages(self.manager.statedata.current_room, 50, 0)
 
@@ -217,7 +227,7 @@ class ChatWindow(Screen):
             for msg in new_msgs['messages'][::-1]: # reverse messages for better user experience
                 self.messages.append({'text' : message_to_str(msg)})
         
-        self.update_thread = KThread(target=self.update_messages)
+        self.update_thread = threading.Thread(target=self.update_messages)
         self.update_thread.start()
 
     def go_to_rooms(self):
@@ -228,7 +238,8 @@ class ChatWindow(Screen):
         self.wm.current = 'rooms'
     
     def on_leave(self, *args):
-        self.update_thread.kill()
+        ChatWindow.getting_updates = False
+        client.cancel_update()
         self.messages = []
         self.manager.statedata.current_room = ''
 
@@ -236,6 +247,6 @@ class ChatWindow(Screen):
         self.ids.message.text = ''
         
     def send_message(self):
-        resp = client.send_message(self.manager.statedata.current_room, self.ids.message.text)
+        resp = client.send_message(self.current_room, self.ids.message.text)
 
         self.reset()

@@ -24,7 +24,8 @@ const (
 	CODE_LOAD_MESSAGES        = "12"
 	CODE_GET_ROOMS            = "13"
 	CODE_IS_USER_IN_ROOM      = "14"
-	CODE_QUIT_ROOM            = "15"
+	CODE_CANCEL_UPDATE        = "15"
+	CODE_QUIT_ROOM            = "16"
 	CODE_ERR                  = "99"
 )
 

@@ -21,6 +21,7 @@ CODE_SEND_MESSAGE         = b"11"
 CODE_LOAD_MESSAGES        = b"12"
 CODE_GET_ROOMS            = b"13"
 CODE_IS_USER_IN_ROOM      = b"14"
+CODE_CANCEL_UPDATE        = b"15"
 CODE_ERR                  = b"99"
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
@@ -111,6 +112,9 @@ class ChatClient:
         while True:
             req = { 'roomName' : room_name }
             self._send_req(CODE_UPDATE, req)
+    
+    def cancel_update(self):
+        return self._send_req(CODE_CANCEL_UPDATE, None)
 
             
 #TODO: to make it faster remove in master branch
