@@ -238,15 +238,15 @@
     GridLayout:
         rows:3
 
-        GridLayout: # Buttons - Quit&Members&Back
+        GridLayout: # Buttons - Leave&Members&Back
             row_force_default: True
             row_default_height:root.height*0.1
             cols:3
             Button:
                 size_hint: 0.15,0.1
-                text:'Quit room'
+                text:'Leave room'
                 on_release:
-                    root.quit_room()
+                    root.leave_room()
             Button:
                 size_hint: .4,.1
                 text:'Room members'
@@ -288,7 +288,7 @@
                 multiline: False
                 on_text_validate:
                     root.send_message()
-                    
+
             Button:
                 pos_hint: {"x":0.83, "y":0.02}
                 size_hint: 0.15, 0.155

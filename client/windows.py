@@ -233,7 +233,7 @@ class ChatWindow(Screen):
     def go_to_rooms(self):
         self.wm.current = 'rooms'
 
-    def quit_room(self):
+    def leave_room(self):
         client.leave_room(self.manager.statedata.current_room)
         self.wm.current = 'rooms'
     
