@@ -127,8 +127,23 @@ class PasswordPopup(GridLayout):
             popup('enter room error', resp['info'])
         else:
             self.PopupInstance.dismiss()
-            # self.manager.statedata.current_room = self._roomName
             self.wm.current = 'chat'
+
+class RoomMembersPopup(GridLayout):
+    def __init__(self, wm, PopupInstance : Popup, roomName : str, **kwargs):
+        super().__init__(**kwargs)
+        self._roomName = roomName
+        self.wm = wm
+        self.PopupInstance = PopupInstance
+
+    def close_room(self):
+        print("ask for close room")  # included notice all online members that server doesn't exists anymore. (get them out?!)
+    
+    def get_ban_list(self):
+        print("ask for users in ban")
+
+
+
 
 class MainWindow(Screen):
     def __init__(self, wm, **kw):
@@ -250,3 +265,9 @@ class ChatWindow(Screen):
         resp = client.send_message(self.manager.statedata.current_room, self.ids.message.text)
 
         self.reset()
+    
+    def open_room_members_list(self):
+        print("opening room members list")  # TODO: check why it doesn't get open on press, and it open just when pressing 'leave room'
+        roomMembersPopup = Popup(title=f"Room members", size_hint=(0.3,0.3), size=(200, 200))
+        roomMembersPopup.content = RoomMembersPopup(self.wm, roomMembersPopup, self.manager.statedata.current_room)
+        roomMembersPopup.open()
