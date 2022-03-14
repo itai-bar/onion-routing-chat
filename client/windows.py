@@ -247,6 +247,6 @@ class ChatWindow(Screen):
         self.ids.message.text = ''
         
     def send_message(self):
-        resp = client.send_message(self.current_room, self.ids.message.text)
+        resp = client.send_message(self.manager.statedata.current_room, self.ids.message.text)
 
         self.reset()
