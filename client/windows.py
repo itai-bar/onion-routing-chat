@@ -234,7 +234,7 @@ class ChatWindow(Screen):
         self.wm.current = 'rooms'
 
     def quit_room(self):
-        #TODO: client.quit_room
+        client.leave_room(self.manager.statedata.current_room)
         self.wm.current = 'rooms'
     
     def on_leave(self, *args):

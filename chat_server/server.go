@@ -256,12 +256,12 @@ func HandleRequests(code string, data []byte, client *Client) string {
 	case CODE_CANCEL_UPDATE:
 		resp = CancelUpdate(client)
 	
-	case CODE_QUIT_ROOM:
-		var req QuitRoomRequest
+	case CODE_LEAVE_ROOM:
+		var req LeaveRoomRequest
 		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
 			return errMsg
 		} 
-		resp = QuitRoom(&req, client)
+		resp = LeaveRoom(&req, client)
 
 	default:
 		resp = GeneralResponse{code, STATUS_FAILED, "undefined request"}

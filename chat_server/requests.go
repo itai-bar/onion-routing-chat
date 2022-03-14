@@ -436,27 +436,28 @@ func CancelUpdate(client *Client) interface{} {
 	return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_SUCCESS, "released cancel successfully"}
 }
 
-func QuitRoom(req *QuitRoomRequest, client *Client) interface{} {
+func LeaveRoom(req *LeaveRoomRequest, client *Client) interface{} {
 	roomID, err := db._getChatRoomID(req.RoomName)
 	if err != nil || roomID == WITHOUT_ID {
 		logger.Err.Println(err)
-		return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "room doesn't exists"}
+		return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "room doesn't exists"}
 	}
 
 	userID, err := db._getUserID(client.username)
 	if err != nil || userID == WITHOUT_ID {
 		logger.Err.Println(err)
-		return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "user doesn't exists"}
+		return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "user doesn't exists"}
 	}
 
 	if db._isUserInRoom(roomID, userID) {
-		success,  err := db.QuitRoomDB(roomID, userID)
+		success,  err := db.LeaveRoomDB(roomID, userID)
 		if err != nil || success == false {
-			return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "something went wrong, maybe user not in room"}
+			return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "something went wrong, maybe user not in room"}
 		}
-		return GeneralResponse{CODE_QUIT_ROOM, STATUS_SUCCESS, "quited successfully"}
+		RemoveMemberFromChat(req.RoomName, client.username)
+		return GeneralResponse{CODE_LEAVE_ROOM, STATUS_SUCCESS, "quited successfully *in case user not in ban..*"}
 	}
-	return GeneralResponse{CODE_QUIT_ROOM, STATUS_FAILED, "user not in room"}
+	return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "user not in room"}
 }
 
 func RemoveMemberFromChat(roomName string, username string) {

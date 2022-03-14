@@ -25,7 +25,7 @@ const (
 	CODE_GET_ROOMS            = "13"
 	CODE_IS_USER_IN_ROOM      = "14"
 	CODE_CANCEL_UPDATE        = "15"
-	CODE_QUIT_ROOM            = "16"
+	CODE_LEAVE_ROOM            = "16"
 	CODE_ERR                  = "99"
 )
 
@@ -106,7 +106,7 @@ type UserInRoomRequest struct {
 	RoomName string `json:"roomName"`
 }
 
-type QuitRoomRequest struct {
+type LeaveRoomRequest struct {
 	RoomName string `json:"roomName"`
 }
 

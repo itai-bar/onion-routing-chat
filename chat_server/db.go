@@ -332,9 +332,9 @@ func (db *ChatDb)GetRoomsDB() ([]string, error) {
 	return rooms, nil
 }
 
-func (db *ChatDb)QuitRoomDB(roomID int, userID int) (bool, error) {
-	sql := `DELETE FROM chats_members WHERE chatID = ? AND userID = ?`
-	err := db._execNoneResponseQuery(sql, userID, roomID)
+func (db *ChatDb)LeaveRoomDB(roomID int, userID int) (bool, error) {
+	sql := `DELETE FROM chats_members WHERE chatID = ? AND userID = ? AND state = 0`
+	err := db._execNoneResponseQuery(sql, roomID, userID)
 	if err != nil {
 		return false, err
 	}
