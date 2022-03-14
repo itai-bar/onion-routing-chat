@@ -227,7 +227,7 @@ class ChatWindow(Screen):
             for msg in new_msgs['messages'][::-1]: # reverse messages for better user experience
                 self.messages.append({'text' : message_to_str(msg)})
         
-        self.update_thread = threading.Thread(target=self.update_messages)
+        self.update_thread = threading.Thread(target=self.update_messages, daemon=True)
         self.update_thread.start()
 
     def go_to_rooms(self):
