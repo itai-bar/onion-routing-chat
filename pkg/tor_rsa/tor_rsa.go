@@ -31,13 +31,15 @@ func NewRsaGivenPemPublicKey(public_pem_key []byte) (*Rsa, error) {
 
 func BytesToPublicKey(pub []byte) (*rsa.PublicKey, error) {
 	block, _ := pem.Decode(pub)
+	if block == nil {
+		return nil, errors.New("Invalid public key")
+	}
 	b := block.Bytes
 
 	ifc, err := x509.ParsePKIXPublicKey(b)
 	if err != nil {
 		return nil, err
 	}
-
 	key, ok := ifc.(*rsa.PublicKey)
 	if !ok {
 		return nil, errors.New("ifc not ok")

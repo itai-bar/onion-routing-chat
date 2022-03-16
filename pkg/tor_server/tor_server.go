@@ -52,7 +52,7 @@ func ReadDataFromSizeHeader(conn net.Conn, sizeSegmentLen int) ([]byte, error) {
 	}
 
 	allData := make([]byte, dataSize)
-	conn.Read(allData)
+	_, err = conn.Read(allData)
 	if err != nil {
 		return nil, err
 	}

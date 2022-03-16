@@ -79,12 +79,22 @@ func HandleClient(conn net.Conn) {
 			logger.Err.Println(err)
 			return
 		}
-		conn.Write(resp)
+		_, err = conn.Write(resp)
+		if err != nil {
+			return
+		}
 		logger.Info.Println("sent response back")
 
 		if headers.closeSocket == 1 {
-			conn.Close()
-			nextNodeConn.Close()
+			err = conn.Close()
+			if err != nil {
+				return
+			}
+
+			err = nextNodeConn.Close()
+			if err != nil {
+				return
+			}
 			break
 		}
 	}
@@ -116,7 +126,10 @@ func GetTorHeaders(allData []byte) (*TorHeaders, error) {
 		return nil, err
 	}
 
-	closeSocket, _ := strconv.Atoi(string(closeSocketBuf))
+	closeSocket, err := strconv.Atoi(string(closeSocketBuf))
+	if err != nil {
+		return nil, err
+	}
 
 	// reading the next node/dst ip
 	nextIpBuf := make([]byte, IP_SEGMENT_SIZE)
@@ -152,7 +165,10 @@ func TransferMessage(conn net.Conn, req []byte, aes_key *tor_aes.Aes) ([]byte, e
 	req = append([]byte(paddedLen), req...)
 
 	// sending the request to the next part of the path
-	conn.Write(req)
+	_, err := conn.Write(req)
+	if err != nil {
+		return nil ,err
+	}
 	logger.Info.Println("forwarded the rest of the message")
 	// from now we expect a response from the rest of the network
 
@@ -186,6 +202,9 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	// inits a rsa object with the key we got from the client
 	// creating the aes key for the rest of comm
 	rsa, err := tor_rsa.NewRsaGivenPemPublicKey(pemKey)
+	if err != nil {
+		return nil, err
+	}
 	aes := tor_aes.NewAesRandom()
 	if err != nil {
 		return nil, err
@@ -202,7 +221,10 @@ func ExchangeKey(conn net.Conn) (*tor_aes.Aes, error) {
 	paddedLen := fmt.Sprintf("%05d", len(buf))
 	buf = append([]byte(paddedLen), buf...)
 
-	conn.Write(buf)
+	_, err = conn.Write(buf)
+	if err != nil {
+		return nil, err
+	}
 
 	logger.Info.Println("sent rsa encrypted aes key")
 	return aes, nil

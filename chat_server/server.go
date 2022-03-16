@@ -254,7 +254,11 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		resp = IsUserInRoom(&req, client)
 
 	case CODE_CANCEL_UPDATE:
-		resp = CancelUpdate(client)
+		var req CancelUpdateRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		} 
+		resp = CancelUpdate(&req, client)
 	
 	case CODE_LEAVE_ROOM:
 		var req LeaveRoomRequest

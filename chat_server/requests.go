@@ -1,6 +1,8 @@
 package chat_server
 
-import "time"
+import (
+	"time"
+)
 
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
@@ -36,6 +38,7 @@ func Login(req *LoginRequest, client *Client) interface{} {
 
 func Logout(client *Client) interface{} {
 	found := false
+	username := client.username
 
 	clientsMx.Lock()
 	for cookie, c := range clients {
@@ -52,7 +55,7 @@ func Logout(client *Client) interface{} {
 	}
 
 	for chatName := range chatRooms {
-		RemoveMemberFromChat(chatName, client.username)
+		SetOfflineUserInRoom(chatName, username)
 	}
 
 	return GeneralResponse{CODE_LOGOUT, STATUS_SUCCESS, "logged out successfuly"}
@@ -98,6 +101,7 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 	// initing the live room, adding the client to it
 	chatRoomsMx.Lock()
 	chatRooms[req.RoomName] = &ChatRoom{onlineMembers: make([]*Client, 0)}
+	//SetOnlineUserInRoom(req.RoomName, client.username)
 	chatRooms[req.RoomName].onlineMembers = append(chatRooms[req.RoomName].onlineMembers, client)
 	chatRoomsMx.Unlock()
 
@@ -165,9 +169,7 @@ func JoinChatRoom(req *JoinChatRoomRequest, client *Client, state int) interface
 		return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_FAILED, "user in ban or with wrong password"}
 	}
 
-	chatRoomsMx.Lock()
-	chatRooms[req.RoomName].onlineMembers = append(chatRooms[req.RoomName].onlineMembers, client)
-	chatRoomsMx.Unlock()
+	SetOnlineUserInRoom(req.RoomName, client.username)
 
 	return GeneralResponse{CODE_JOIN_CHAT_ROOM, STATUS_SUCCESS, "joined room successfuly"}
 }
@@ -205,7 +207,7 @@ func KickFromChatRoom(req *KickFromChatRoomRequest, client *Client) interface{} 
 		return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_FAILED, "something went wrong"}
 	}
 
-	RemoveMemberFromChat(req.RoomName, req.Username)
+	SetOfflineUserInRoom(req.RoomName, req.Username)
 
 	return GeneralResponse{CODE_KICK_FROM_CHAT_ROOM, STATUS_SUCCESS, "kicked user from room successfuly"}
 }
@@ -244,7 +246,7 @@ func BanFromChatRoom(req *BanFromChatRoomRequest, client *Client) interface{} {
 		return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_FAILED, "something went wrong"}
 	}
 
-	RemoveMemberFromChat(req.RoomName, req.Username)
+	SetOfflineUserInRoom(req.RoomName, req.Username)
 
 	return GeneralResponse{CODE_BAN_FROM_CHAT_ROOM, STATUS_SUCCESS, "banned user from room successfuly"}
 }
@@ -407,6 +409,17 @@ func GetRooms() interface{} {
 	return GetRoomsResponse{GeneralResponse{CODE_GET_ROOMS, STATUS_SUCCESS, "got rooms successfuly"}, rooms}
 }
 
+func SetOnlineUserInRoom(roomName string, username string) {
+	for _, client := range clients {
+		if client.username == username {
+			SetOfflineUserInRoom(roomName, username)
+			chatRoomsMx.Lock()
+			chatRooms[roomName].onlineMembers = append(chatRooms[roomName].onlineMembers, client)
+			chatRoomsMx.Unlock()
+		}
+	}
+}
+
 func IsUserInRoom(req *UserInRoomRequest, client *Client) interface{} {
 	roomID, err := db._getChatRoomID(req.RoomName)
 	if err != nil || roomID == WITHOUT_ID {
@@ -422,17 +435,21 @@ func IsUserInRoom(req *UserInRoomRequest, client *Client) interface{} {
 
 	inRoom := db._isUserInRoom(roomID, userID)
 	if inRoom {
+		SetOnlineUserInRoom(req.RoomName, client.username)
 		return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_FAILED, "user in room"}
 	}
 	return GeneralResponse{CODE_IS_USER_IN_ROOM, STATUS_SUCCESS, "user not in room"}
 }
 
-func CancelUpdate(client *Client) interface{} {
+func CancelUpdate(req *CancelUpdateRequest, client *Client) interface{} {
 	for _, clientIterator := range clients {
 		if clientIterator.username == client.username {
 			clientIterator.cond.Signal()
 		}
 	}
+
+	SetOfflineUserInRoom(req.RoomName, client.username)
+
 	return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_SUCCESS, "released cancel successfully"}
 }
 
@@ -450,17 +467,20 @@ func LeaveRoom(req *LeaveRoomRequest, client *Client) interface{} {
 	}
 
 	if db._isUserInRoom(roomID, userID) {
-		success,  err := db.LeaveRoomDB(roomID, userID)
+		success, err := db.LeaveRoomDB(roomID, userID)
 		if err != nil || success == false {
 			return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "something went wrong, maybe user not in room"}
 		}
-		RemoveMemberFromChat(req.RoomName, client.username)
+		SetOfflineUserInRoom(req.RoomName, client.username)
 		return GeneralResponse{CODE_LEAVE_ROOM, STATUS_SUCCESS, "quited successfully *in case user not in ban..*"}
 	}
 	return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "user not in room"}
 }
 
-func RemoveMemberFromChat(roomName string, username string) {
+func SetOfflineUserInRoom(roomName string, username string) {
+	if roomName == "" {
+		return
+	}
 	chatRoomsMx.Lock()
 
 	for i, v := range chatRooms[roomName].onlineMembers {

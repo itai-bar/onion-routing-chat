@@ -119,3 +119,7 @@ type GetRoomsResponse struct {
 	GeneralResponse
 	Rooms []string `json:"rooms"`
 }
+
+type CancelUpdateRequest struct {
+	RoomName string `json:"roomName"`
+}

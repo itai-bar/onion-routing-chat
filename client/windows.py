@@ -249,7 +249,7 @@ class ChatWindow(Screen):
     def on_leave(self, *args):
         # stoping update requests
         ChatWindow.getting_updates = False
-        client.cancel_update()
+        client.cancel_update(self.manager.statedata.current_room)
 
         # reseting chat properties 
         self.messages = []

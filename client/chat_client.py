@@ -118,8 +118,9 @@ class ChatClient:
             req = { 'roomName' : room_name }
             self._send_req(CODE_UPDATE, req)
     
-    def cancel_update(self):
-        return self._send_req(CODE_CANCEL_UPDATE, None)
+    def cancel_update(self, room_name=None):
+        req = { 'roomName' : room_name }
+        return self._send_req(CODE_CANCEL_UPDATE, req)
 
             
 #TODO: to make it faster remove in master branch
