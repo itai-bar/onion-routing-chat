@@ -7,6 +7,7 @@
 # room managment for admin only
 
 from concurrent.futures import thread
+from multiprocessing import managers
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
@@ -33,15 +34,17 @@ client = ChatClient()
 client.auth()
 
 def message_to_str(msg: dict) -> str:
+    # parsing the unix time sent with the message to a readable date
     t = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
     return f"{t} | {msg['sender']} - {msg['content']}"
 
 def exit_handler():
-    print("Exists")
-    ChatWindow.getting_updates = False
-    client.cancel_update()
+    ChatWindow.getting_updates = False # stop the update request loop
+    client.cancel_update() # makes the server stop holding the requeqst
     client.logout()
-atexit.register(exit_handler)
+    
+# calling the exit handler at exit
+atexit.register(exit_handler) 
 
 def popup(title, text):
     pop = Popup(title=title,
@@ -60,6 +63,7 @@ class LoginWindow(Screen):
     def btn_login(self):
         resp = client.login(self.username.text, self.password.text)
         self.reset()
+
         if resp['status'] == STATUS_FAILED:
             popup('login error', resp['info'])
         else:
@@ -142,9 +146,6 @@ class RoomMembersPopup(GridLayout):
     def get_ban_list(self):
         print("ask for users in ban")
 
-
-
-
 class MainWindow(Screen):
     def __init__(self, wm, **kw):
         self.wm = wm
@@ -175,22 +176,26 @@ class RoomsWindow(Screen):
 
     def load_rooms(self):
         resp = client.get_rooms()
+
         if resp['status'] == STATUS_FAILED:
             popup('rooms error', resp['info'])
         else:
-            rooms = resp['rooms']
-            if rooms:
-                for room in rooms:
-                    passwordPopup = Popup(title=f"Enter {room}'s password", size_hint=(0.3,0.3), size=(200, 200))
-                    passwordPopup.content = PasswordPopup(self.wm, passwordPopup, room)
-                    roomBtn = Button(text=room, size_hint_y=None,height=100, on_press=partial(self.is_user_in_room, passwordPopup))
-                    self.ids.roomsNames.add_widget(roomBtn)
+            for room in (resp['rooms'] or []):
+                passwordPopup = Popup(title=f"Enter {room}'s password", size_hint=(0.3,0.3), size=(200, 200))
+                passwordPopup.content = PasswordPopup(self.wm, passwordPopup, room)
+
+                roomBtn = Button(text=room, 
+                                size_hint_y=None,
+                                height=100, 
+                                on_press=partial(self.is_user_in_room, passwordPopup))
+
+                # adding the button to the list
+                self.ids.roomsNames.add_widget(roomBtn)
     
     def is_user_in_room(self, passwordPopup:Popup, *args):
         resp = client.is_user_in_room(passwordPopup.content._roomName)
         self.manager.statedata.current_room = passwordPopup.content._roomName
 
-        print("resp['info']:", resp['info'])
         if resp['info'] == 'user in room':
             self.wm.current = 'chat'
         else:
@@ -202,17 +207,10 @@ class RoomsWindow(Screen):
     def go_to_main(self):
         self.wm.current = 'main'
     
-    def set_fake_rooms(self, amount_of_fakes):
-        for room in range(1, amount_of_fakes+1):
-            room_name = "fake" + str(room)
-            passwordPopup = Popup(title=f"Enter {room}'s password", size_hint=(0.3,0.3), size=(200, 200))
-            passwordPopup.content = PasswordPopup(self.wm, passwordPopup, room)
-            roomBtn = Button(text=room_name, size_hint_y=None,height=100, on_press=passwordPopup.open)
-            self.ids.roomsNames.add_widget(roomBtn)
-
 class ChatWindow(Screen):
+    #TODO: add room members button functionallity
     messages = ListProperty()
-    getting_updates = False
+    getting_updates = False # used outside of this class
     
     def __init__(self, wm, **kw):
         self.wm = wm
@@ -220,28 +218,24 @@ class ChatWindow(Screen):
         super().__init__(**kw)            
 
     def update_messages(self):
-        #TODO: fix bug on first message sending' it doesn't shown on sender side(maybe bug in client)
-        #TODO: add room members button functionallity
-        room_for_thread = self.manager.statedata.current_room
+        # asking the server for updates about the chat
         while ChatWindow.getting_updates:
-            print("wait for update in room", room_for_thread)
-            msgs = client.get_update(room_for_thread)
-            print(f'got messages from update req: {msgs}')
-            if msgs['messages'] != None:
-                for msg in msgs['messages'][::-1]:  # reverse messages for better user experience
-                    self.messages.append({'text' : message_to_str(msg)})
-        print("Thread breaked!")
+            msgs = client.get_update(self.manager.statedata.current_room)
+
+            # reverse messages for better user experience
+            for msg in (msgs['messages'] or [])[::-1]:  
+                self.messages.append({'text' : message_to_str(msg)})
 
     def on_enter(self, *args):
+        # allowing the update thread to loop
         ChatWindow.getting_updates = True
-
-        print("current room", self.manager.statedata.current_room)
         new_msgs = client.load_messages(self.manager.statedata.current_room, 50, 0)
 
-        if new_msgs['messages'] != None:
-            for msg in new_msgs['messages'][::-1]: # reverse messages for better user experience
-                self.messages.append({'text' : message_to_str(msg)})
-        
+        # reverse messages for better user experience
+        for msg in (new_msgs['messages'] or [])[::-1]: 
+            self.messages.append({'text' : message_to_str(msg)})
+
+        # starting the update thread
         self.update_thread = threading.Thread(target=self.update_messages, daemon=True)
         self.update_thread.start()
 
@@ -253,8 +247,11 @@ class ChatWindow(Screen):
         self.wm.current = 'rooms'
     
     def on_leave(self, *args):
+        # stoping update requests
         ChatWindow.getting_updates = False
         client.cancel_update()
+
+        # reseting chat properties 
         self.messages = []
         self.manager.statedata.current_room = ''
 
@@ -262,8 +259,7 @@ class ChatWindow(Screen):
         self.ids.message.text = ''
         
     def send_message(self):
-        resp = client.send_message(self.manager.statedata.current_room, self.ids.message.text)
-
+        client.send_message(self.manager.statedata.current_room, self.ids.message.text)
         self.reset()
     
     def open_room_members_list(self):
