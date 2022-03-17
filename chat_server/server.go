@@ -3,7 +3,6 @@ package chat_server
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"sync"
@@ -50,7 +49,7 @@ func init() {
 
 	sqlDb, err := InitDb("/app/db.sqlite")
 	if err != nil {
-		log.Fatal("ERROR: ", err)
+		logger.Err.Fatal(err)
 	}
 
 	db = InitChatDb(sqlDb)
@@ -83,7 +82,6 @@ func HandleClient(conn net.Conn) {
 		logger.Info.Println("the cookie is", *cookie)
 
 		// creating the new client, name will be set in login
-
 		clientsMx.Lock()
 		client := &Client{username: "", aesObj: aes}
 		client.cond = sync.NewCond(client)
@@ -94,7 +92,6 @@ func HandleClient(conn net.Conn) {
 	}
 
 	// client found in map
-
 	cookie, err := InitCookie(data[:COOKIE_SIZE])
 	if err != nil {
 		logger.Err.Println(err)
@@ -123,8 +120,10 @@ func HandleClient(conn net.Conn) {
 	SendResponse(conn, jsonResp, currentClient)
 }
 
+/*
+	sending a response string with the needed protocol headers
+*/
 func SendResponse(conn net.Conn, resp string, client *Client) {
-
 	// encrypting the json with the aes key saved for the specific cookie
 	encryptpedResp, err := client.aesObj.Encrypt([]byte(resp))
 	if err != nil {
@@ -245,26 +244,26 @@ func HandleRequests(code string, data []byte, client *Client) string {
 
 	case CODE_GET_ROOMS:
 		resp = GetRooms()
-	
+
 	case CODE_IS_USER_IN_ROOM:
 		var req UserInRoomRequest
 		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
 			return errMsg
-		} 
+		}
 		resp = IsUserInRoom(&req, client)
 
 	case CODE_CANCEL_UPDATE:
 		var req CancelUpdateRequest
 		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
 			return errMsg
-		} 
+		}
 		resp = CancelUpdate(&req, client)
-	
+
 	case CODE_LEAVE_ROOM:
 		var req LeaveRoomRequest
 		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
 			return errMsg
-		} 
+		}
 		resp = LeaveRoom(&req, client)
 
 	default:

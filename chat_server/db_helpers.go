@@ -21,6 +21,7 @@ func (db *ChatDb) _deleteRoomMembers(roomID int, roomPassword string, adminID in
 	sql := `
 		DELETE FROM chats_members WHERE chatID = ?
 	`
+
 	err := db._execNoneResponseQuery(sql, roomID)
 	if err != nil {
 		return err
@@ -33,18 +34,21 @@ func (db *ChatDb) _deleteRoomMembers(roomID int, roomPassword string, adminID in
 func (db *ChatDb) _execNoneResponseQuery(query string, args ...interface{}) error {
 	dbMx.Lock()
 	defer dbMx.Unlock()
+
 	db._saveCurrentState()
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		db._revertChanges()
 		return err
 	}
+
 	defer stmt.Close()
 	_, err = stmt.Exec(args...)
 	if err != nil {
 		db._revertChanges()
 		return err
 	}
+
 	db._saveChanges()
 	return nil
 }
@@ -53,11 +57,7 @@ func (db *ChatDb) _deleteRoom(roomID int, roomPassword string, adminID int) erro
 	sql := `
 		DELETE FROM chats WHERE ID = ? AND password = ? AND adminID = ?;
 	`
-	err := db._execNoneResponseQuery(sql, roomID, roomPassword, adminID)
-	if err != nil {
-		return err
-	}
-	return nil
+	return db._execNoneResponseQuery(sql, roomID, roomPassword, adminID)
 }
 
 func (db *ChatDb) _getChatRoomID(roomName string) (int, error) {
@@ -132,11 +132,14 @@ func (db *ChatDb) _revertChanges() error {
 func (db *ChatDb) _rowExists(query string, args ...interface{}) bool {
 	var exists bool
 	query = fmt.Sprintf("SELECT exists (%s)", query)
+
 	dbMx.Lock()
 	defer dbMx.Unlock()
+
 	err := db.QueryRow(query, args...).Scan(&exists)
 	if err != nil && err != sql.ErrNoRows {
 		logger.Err.Fatalf("error checking if row exists '%s' %v", args, err)
 	}
+
 	return exists
 }

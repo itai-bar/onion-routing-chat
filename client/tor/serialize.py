@@ -21,6 +21,7 @@ def serialize_tor_message(message : bytes, route_ips : list, close_socket : bool
     Returns:
         bytes: encrypted message suited to protocol
     """
+    # tells the node if it should wait for messages or not
     flag   = (const.CLOSE_SOCKET_FLAG if close_socket else const.KEEP_SOCKET_FLAG).encode()
     
     result = message

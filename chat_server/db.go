@@ -152,6 +152,7 @@ func (db *ChatDb) CheckUsersPassword(username string, password string) bool {
 		return false // username not found
 	}
 
+	// does the password input match the db password
 	return dbPassword == password
 }
 
@@ -307,7 +308,7 @@ func (db *ChatDb) LoadLastMessages(roomId int, amount int, offset int) ([]Messag
 	return messages, err
 }
 
-func (db *ChatDb)GetRoomsDB() ([]string, error) {
+func (db *ChatDb) GetRoomsDB() ([]string, error) {
 	sql := `
 		SELECT name FROM chats
 	`
@@ -332,7 +333,7 @@ func (db *ChatDb)GetRoomsDB() ([]string, error) {
 	return rooms, nil
 }
 
-func (db *ChatDb)LeaveRoomDB(roomID int, userID int) (bool, error) {
+func (db *ChatDb) LeaveRoomDB(roomID int, userID int) (bool, error) {
 	sql := `DELETE FROM chats_members WHERE chatID = ? AND userID = ? AND state = 0`
 	err := db._execNoneResponseQuery(sql, roomID, userID)
 	if err != nil {

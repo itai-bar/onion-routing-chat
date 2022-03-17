@@ -58,14 +58,17 @@ func HandleClient(conn net.Conn) {
 		ip = ip[:strings.IndexByte(ip, ':')] //slice till the port without it
 		network[ip] = struct{}{}             // init en empty struct to the map
 		conn.Write([]byte("1"))              // "1" for true - it means joined successfully
-	case CODE_NODE_DIS:
+
+	case CODE_NODE_DIS: // node
 		logger.Info.Println("got a node disconnection req")
 
 		delete(network, conn.RemoteAddr().String())
-	case CODE_ROUTE:
+
+	case CODE_ROUTE: // client requesting to use the network
 		logger.Info.Println("got a client routing req")
 
-		if len(network) >= 3 { // gotta have 3 nodes to send a 3 nodes route..
+		// gotta have 3 nodes to send a 3 nodes route..
+		if len(network) >= 3 {
 			SendRoute(conn, network)
 		} else {
 			// TODO: send error msg to client

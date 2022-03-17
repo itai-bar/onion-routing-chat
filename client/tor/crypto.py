@@ -46,8 +46,6 @@ class Aes:
         cipher = AES.new(self._key, AES.MODE_CFB, iv, segment_size=128)
         return cipher.decrypt(padded)[:len(value)]
 
-
-
 class Rsa():
     def __init__(self, given_pem_public_key : bytes=None, given_pem_private_key : bytes=None):
         """C'tor that generates RSA key in case that one of the arguments is None

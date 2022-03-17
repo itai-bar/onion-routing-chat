@@ -259,7 +259,15 @@ class ChatWindow(Screen):
         self.ids.message.text = ''
         
     def send_message(self):
-        client.send_message(self.manager.statedata.current_room, self.ids.message.text)
+        msg = self.ids.message.text
+
+        # /command args args
+        # used for admin commands
+        if msg.startswith('/'):
+            self.admin_command(msg)
+        else:
+            client.send_message(self.manager.statedata.current_room, msg)
+
         self.reset()
     
     def open_room_members_list(self):
@@ -267,3 +275,24 @@ class ChatWindow(Screen):
         roomMembersPopup = Popup(title=f"Room members", size_hint=(0.3,0.3), size=(200, 200))
         roomMembersPopup.content = RoomMembersPopup(self.wm, roomMembersPopup, self.manager.statedata.current_room)
         roomMembersPopup.open()
+    
+    def admin_command(self, cmd: str):
+        req, args = cmd.split()[0], cmd.split()[1:]
+        req       = req[1:]
+        
+        cmd_map = { 'kick'   :  client.kick_user,
+                    'ban'    :  client.ban_user,
+                    'unban'  :  client.unban_user
+                }
+
+        try:
+            if len(args) != 1:
+                popup('command', '1 arg only!')
+            else:
+                resp = cmd_map[req](self.manager.statedata.current_room, args[0])
+                if resp['status'] == STATUS_FAILED:
+                    popup('command failed', resp['info'])
+                else:
+                    popup('command succeeded', resp['info'])
+        except KeyError:
+            popup('command error', 'command does not exists!')
