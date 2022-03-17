@@ -22,7 +22,7 @@ from kivy.uix.gridlayout import GridLayout
 import atexit
 from functools import partial
 
-from chat_client import ChatClient, STATUS_FAILED
+from chat_client import STATE_OFFLINE, STATE_ONLINE, ChatClient, STATUS_FAILED
 
 # parsing time
 from dateutil import parser
@@ -139,6 +139,26 @@ class RoomMembersPopup(GridLayout):
         self._roomName = roomName
         self.wm = wm
         self.PopupInstance = PopupInstance
+        self.on_enter()
+
+    def on_enter(self):
+        resp = client.get_room_members(self._roomName)
+        if resp['status'] == STATUS_FAILED:
+            popup('open room members list error', resp['info'])
+        else:
+            self._add_admin_to_list(resp['adminName'])
+            self._add_members_to_list(resp['onlineMembers'], STATE_ONLINE)
+            self._add_members_to_list(resp['offlineMembers'], STATE_OFFLINE)
+
+    def _add_admin_to_list(self, admin_name):
+        print("admin is:", admin_name)
+        pass #TODO:add admin so it will be recognized as admin
+
+    def _add_members_to_list(self, members, state):
+        for member in members:            
+            name_and_state = member + " - " + "Online" if state == STATE_ONLINE else "Offline"
+            print(name_and_state)
+            self.ids.roomMembers.add_widget(Label(text=name_and_state))
 
     def close_room(self):
         print("ask for close room")  # included notice all online members that server doesn't exists anymore. (get them out?!)
