@@ -25,7 +25,8 @@ const (
 	CODE_GET_ROOMS            = "13"
 	CODE_IS_USER_IN_ROOM      = "14"
 	CODE_CANCEL_UPDATE        = "15"
-	CODE_LEAVE_ROOM            = "16"
+	CODE_LEAVE_ROOM           = "16"
+	CODE_GET_ROOM_MEMBERS     = "17"
 	CODE_ERR                  = "99"
 )
 
@@ -122,4 +123,15 @@ type GetRoomsResponse struct {
 
 type CancelUpdateRequest struct {
 	RoomName string `json:"roomName"`
+}
+
+type GetRoomMembersRequest struct {
+	RoomName string `json:"roomName"`
+}
+
+type GetRoomMembersResponse struct {
+	GeneralResponse
+	AdminName           string   `json:"adminName"`
+	OnlineMembersNames  []string `json:"onlineMembers"`
+	OfflineMembersNames []string `json:"offlineMembers"`
 }

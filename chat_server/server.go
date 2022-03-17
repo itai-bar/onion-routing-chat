@@ -265,6 +265,13 @@ func HandleRequests(code string, data []byte, client *Client) string {
 			return errMsg
 		}
 		resp = LeaveRoom(&req, client)
+	
+	case CODE_GET_ROOM_MEMBERS:
+		var req GetRoomMembersRequest
+		if errMsg := Unmarshal(code, data, &req); errMsg != "" {
+			return errMsg
+		}
+		resp = GetRoomMembers(&req, client)
 
 	default:
 		resp = GeneralResponse{code, STATUS_FAILED, "undefined request"}

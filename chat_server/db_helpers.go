@@ -5,6 +5,25 @@ import (
 	"fmt"
 )
 
+func (db *ChatDb) _getAdminRoom(roomID int) string {
+	sql := `
+		SELECT users.username 
+		FROM chats
+		INNER JOIN users
+		ON users.ID = chats.adminID
+		WHERE chats.ID = ?;
+	`
+	var adminName string
+	
+	err := db.QueryRow(sql, roomID).Scan(&adminName)
+	if err != nil {
+		logger.Err.Println(err)
+		return "" // room not found
+	}
+
+	return adminName
+}
+
 func (db *ChatDb) _deleteRoomMessages(roomID int, roomPassword string, adminID int) error {
 	sql := `
 		DELETE FROM messages WHERE chatID = ?;

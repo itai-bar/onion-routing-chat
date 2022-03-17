@@ -342,6 +342,46 @@ func (db *ChatDb) LeaveRoomDB(roomID int, userID int) (bool, error) {
 	return true, nil
 }
 
+func (db *ChatDb) GetOfflineMembersInRoomDB(roomID int, onlineMembersNames []string) ([]string, error) {
+	sql := `
+		SELECT users.username
+		FROM chats_members
+		INNER JOIN users
+		ON users.ID = chats_members.userID
+		WHERE chats_members.chatID = ? AND chats_members.state = 0;
+	`
+	var membersNames []string
+
+	rows, err := db.Query(sql, roomID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var memberName string
+
+		err = rows.Scan(&memberName)
+		if err != nil {
+			return nil, err
+		}
+
+		membersNames = append(membersNames, memberName)
+	}
+
+	//Erase online members from all members, to seperate offline members from online members
+	//TODO:fix bug of empty name in list (occur when user re-enter to chat after x button)
+	for _, onlineMemberName := range onlineMembersNames {
+		for memberIdx, memberName := range membersNames {
+			if onlineMemberName == memberName {
+				membersNames = append(membersNames[:memberIdx], membersNames[memberIdx+1:]...)
+				break
+			}
+		}
+	}
+
+	return membersNames, nil
+}
+
 func CloseDB() {
 	db.Close()
 }

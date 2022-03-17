@@ -468,7 +468,7 @@ func LeaveRoom(req *LeaveRoomRequest, client *Client) interface{} {
 
 	if db._isUserInRoom(roomID, userID) {
 		success, err := db.LeaveRoomDB(roomID, userID)
-		if err != nil || success == false {
+		if err != nil || !success {
 			return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "something went wrong, maybe user not in room"}
 		}
 		SetOfflineUserInRoom(req.RoomName, client.username)
@@ -492,6 +492,39 @@ func SetOfflineUserInRoom(roomName string, username string) {
 	}
 
 	chatRoomsMx.Unlock()
+}
+
+func GetRoomMembers(req *GetRoomMembersRequest, client *Client) interface{} {
+	roomID, err := db._getChatRoomID(req.RoomName)
+	if err != nil || roomID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_GET_ROOM_MEMBERS, STATUS_FAILED, "room doesn't exists"}
+	}
+
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_GET_ROOM_MEMBERS, STATUS_FAILED, "user doesn't exists"}
+	}
+
+	if !db._isUserInRoom(roomID, userID) {
+		return GeneralResponse{CODE_GET_ROOM_MEMBERS, STATUS_FAILED, "user not in room"}
+	}
+
+	var onlineMembersNames []string
+	for _, onlineMember := range chatRooms[req.RoomName].onlineMembers {
+		onlineMembersNames = append(onlineMembersNames, onlineMember.username)
+	}
+
+	offlineMembersNames, err := db.GetOfflineMembersInRoomDB(roomID, onlineMembersNames)
+	if err != nil {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_GET_ROOM_MEMBERS, STATUS_FAILED, "something went wrong"}
+	}
+
+	adminName := db._getAdminRoom(roomID)
+	
+	return GetRoomMembersResponse{GeneralResponse{CODE_GET_ROOM_MEMBERS, STATUS_SUCCESS, "got room members successfully"}, adminName, onlineMembersNames, offlineMembersNames}
 }
 
 func IsUserLoggedin(username string) bool {
