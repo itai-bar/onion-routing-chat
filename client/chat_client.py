@@ -23,9 +23,13 @@ CODE_GET_ROOMS            = b"13"
 CODE_IS_USER_IN_ROOM      = b"14"
 CODE_CANCEL_UPDATE        = b"15"
 CODE_LEAVE_ROOM           = b"16"
+CODE_GET_ROOM_MEMBERS     = b"17"
 CODE_ERR                  = b"99"
+
 STATUS_SUCCESS = 1
 STATUS_FAILED  = 0
+STATE_ONLINE = 1
+STATE_OFFLINE = 0
 
 KEYS_FILES_NAME = 'keys.pem'
 
@@ -105,7 +109,7 @@ class ChatClient:
         req = {'roomName' : room_name}
         return self._send_req(CODE_IS_USER_IN_ROOM, req)
 
-    def leave_room(self, room_name):
+    def leave_room(self, room_name) -> dict:
         req = {'roomName' : room_name}
         return self._send_req(CODE_LEAVE_ROOM, req)
     
@@ -118,9 +122,13 @@ class ChatClient:
             req = { 'roomName' : room_name }
             self._send_req(CODE_UPDATE, req)
     
-    def cancel_update(self, room_name=None):
+    def cancel_update(self, room_name=None) -> dict:
         req = { 'roomName' : room_name }
         return self._send_req(CODE_CANCEL_UPDATE, req)
+
+    def get_room_members(self, room_name) -> dict:
+        req = { 'roomName' : room_name}
+        return self._send_req(CODE_GET_ROOM_MEMBERS, req)
 
             
 #TODO: to make it faster remove in master branch
