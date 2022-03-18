@@ -302,12 +302,13 @@ class ChatWindow(Screen):
         
         cmd_map = { 'kick'   :  client.kick_user,
                     'ban'    :  client.ban_user,
-                    'unban'  :  client.unban_user
+                    'unban'  :  client.unban_user,
+                    'delete' :  client.delete_room
                 }
 
         try:
             if len(args) != 1:
-                popup('command', '1 arg only!')
+                popup('command', '1 args needed for this command!')
             else:
                 resp = cmd_map[req](self.manager.statedata.current_room, args[0])
                 if resp['status'] == STATUS_FAILED:

@@ -179,7 +179,7 @@
                     height: self.minimum_height
                     id: roomMembers
         GridLayout:
-            cols:2
+            cols:1
             AnchorLayout:
                 anchor_x: 'left'
                 anchor_y: 'bottom'
@@ -188,14 +188,14 @@
                     text: "Ban list"
                     on_release:
                         root.get_ban_list()
-            AnchorLayout:
-                anchor_x: 'right'
-                anchor_y: 'bottom'
-                Button:
-                    size_hint: 1, 0.5
-                    text: "Close room"
-                    on_release:
-                        root.close_room()
+            # AnchorLayout:
+            #     anchor_x: 'right'
+            #     anchor_y: 'bottom'
+            #     Button:
+            #         size_hint: 1, 0.5
+            #         text: "Close room"
+            #         on_release:
+            #             root.close_room()
 
 <MainWindow>:
     name: "main"
