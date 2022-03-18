@@ -156,9 +156,9 @@ class RoomMembersPopup(GridLayout):
 
     def _add_members_to_list(self, members, state):
         for member in members:            
-            name_and_state = member + " - " + "Online" if state == STATE_ONLINE else "Offline"
+            name_and_state = member + " - " + ("Online" if state == STATE_ONLINE else "Offline")
             print(name_and_state)
-            self.ids.roomMembers.add_widget(Label(text=name_and_state))
+            self.ids.roomMembers.add_widget(Label(text=name_and_state, size_hint=(None, None), height=25))
 
     def close_room(self):
         print("ask for close room")  # included notice all online members that server doesn't exists anymore. (get them out?!)
@@ -291,7 +291,7 @@ class ChatWindow(Screen):
         self.reset()
     
     def open_room_members_list(self):
-        print("opening room members list")  # TODO: check why it doesn't get open on press, and it open just when pressing 'leave room'
+        print("opening room members list")
         roomMembersPopup = Popup(title=f"Room members", size_hint=(0.3,0.3), size=(200, 200))
         roomMembersPopup.content = RoomMembersPopup(self.wm, roomMembersPopup, self.manager.statedata.current_room)
         roomMembersPopup.open()

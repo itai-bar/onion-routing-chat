@@ -210,7 +210,7 @@ func (db *ChatDb) JoinChatRoomDB(roomID int, roomPassword string, userID int, ba
 	if inBan {
 		logger.Info.Println("user:", userID, " in ban")
 		return false, nil
-	} //TODO:check if can move to requests.go or something else
+	}
 
 	// password has to match or giving ban
 	if !db.isRoomPassword(roomID, roomPassword) && banState == 0 {

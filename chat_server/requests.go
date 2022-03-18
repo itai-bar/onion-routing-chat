@@ -109,7 +109,6 @@ func CreateChatRoom(req *CreateChatRoomRequest, client *Client) interface{} {
 }
 
 func DeleteChatRoom(req *DeleteChatRoomRequest, client *Client) interface{} {
-	//TODO: check credentials(in all things that needs that)
 	roomID, err := db._getChatRoomID(req.RoomName)
 	if err != nil || roomID == WITHOUT_ID {
 		logger.Err.Println(err)
@@ -448,9 +447,12 @@ func CancelUpdate(req *CancelUpdateRequest, client *Client) interface{} {
 		}
 	}
 
+	if req.RoomName == "" {
+		return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_FAILED, "no room for release cancel"}
+	}
 	SetOfflineUserInRoom(req.RoomName, client.username)
 
-	return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_SUCCESS, "released cancel successfully"}
+	return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_SUCCESS, "released cancel successfuly"}
 }
 
 func LeaveRoom(req *LeaveRoomRequest, client *Client) interface{} {
@@ -478,13 +480,14 @@ func LeaveRoom(req *LeaveRoomRequest, client *Client) interface{} {
 }
 
 func SetOfflineUserInRoom(roomName string, username string) {
+	logger.Info.Println("set", username, "offline from", roomName)
 	if roomName == "" {
 		return
 	}
 	chatRoomsMx.Lock()
-
-	for i, v := range chatRooms[roomName].onlineMembers {
-		if v.username == username {
+	//TODO: add request to get deleted from clients(that what cause us to use onlineMember.username == "" in next lines)
+	for i, onlineMember := range chatRooms[roomName].onlineMembers {
+		if onlineMember.username == username || onlineMember.username == "" { // wanted user || not logged in
 			// removing the username by appending without it
 			chatRooms[roomName].onlineMembers = append(chatRooms[roomName].onlineMembers[:i],
 				chatRooms[roomName].onlineMembers[i+1:]...)
@@ -512,9 +515,12 @@ func GetRoomMembers(req *GetRoomMembersRequest, client *Client) interface{} {
 	}
 
 	var onlineMembersNames []string
+	logger.Info.Println("online members before are:", onlineMembersNames)
 	for _, onlineMember := range chatRooms[req.RoomName].onlineMembers {
+		logger.Info.Println("Adding", onlineMember.username, "to online members")
 		onlineMembersNames = append(onlineMembersNames, onlineMember.username)
 	}
+	logger.Info.Println("online members after are:", onlineMembersNames)
 
 	offlineMembersNames, err := db.GetOfflineMembersInRoomDB(roomID, onlineMembersNames)
 	if err != nil {
