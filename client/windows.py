@@ -315,6 +315,7 @@ class ChatWindow(Screen):
             client.send_message(self.manager.statedata.current_room, msg)
 
         self.reset()
+        self.ids.message.focus = True
     
     def open_room_members_list(self):
         roomMembersPopup = Popup(title=f"Room members", size_hint=(0.3,0.3), size=(200, 200))
