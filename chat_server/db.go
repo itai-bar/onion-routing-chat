@@ -154,8 +154,6 @@ func (db *ChatDb) CheckUsersPassword(username string, password string) bool {
 		return false // username not found
 	}
 	hashOfPassword := sha256.Sum256([]byte(password))
-	logger.Err.Println("check DB hash:", dbPasswordHash)
-	logger.Err.Println("check USER hash:", string(hashOfPassword[:]))
 	// does the password input match the db password
 	return dbPasswordHash == string(hashOfPassword[:])
 }
