@@ -5,7 +5,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
+	"crypto/sha256"
 )
 
 type ChatDb struct {
@@ -130,7 +130,8 @@ func (db *ChatDb) RegisterDB(username string, password string) (bool, error) {
 	sql := `
 		INSERT INTO users ( username, password ) VALUES ( ?, ? );
 	`
-	err := db._execNoneResponseQuery(sql, username, password)
+	hashOfPassword := sha256.Sum256([]byte(password))
+	err := db._execNoneResponseQuery(sql, username, string(hashOfPassword[:]))
 	if err != nil {
 		return false, err
 	}
@@ -152,10 +153,11 @@ func (db *ChatDb) CheckUsersPassword(username string, password string) bool {
 	if err != nil {
 		return false // username not found
 	}
-
+	hashOfPassword := sha256.Sum256([]byte(password))
+	logger.Err.Println("check DB hash:", dbPasswordHash)
+	logger.Err.Println("check USER hash:", string(hashOfPassword[:]))
 	// does the password input match the db password
-	err = bcrypt.CompareHashAndPassword([]byte(dbPasswordHash), []byte(password))
-	return err == nil
+	return dbPasswordHash == string(hashOfPassword[:])
 }
 
 func (db *ChatDb) isRoomPassword(roomID int, roomPassword string) bool {

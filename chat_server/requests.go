@@ -3,7 +3,6 @@ package chat_server
 import (
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 )
 
 // registers a user to the db if his username does not exists already
@@ -12,13 +11,7 @@ func Register(req *RegisterRequest) interface{} {
 		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "invalid password or username"}
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
-	if err != nil {
-		logger.Err.Println(err)
-		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "something went wrong"}
-	}
-
-	ok, err := db.RegisterDB(req.Username, string(hash))
+	ok, err := db.RegisterDB(req.Username, req.Password)
 
 	if err != nil {
 		logger.Err.Println(err)
