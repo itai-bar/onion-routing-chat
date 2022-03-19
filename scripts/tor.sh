@@ -5,7 +5,7 @@ NODES_AMOUNT=$1
 LOG_MODE=$2
 
 if [ $ARGC != 2 ]; then
-    echo "Usage: ./tor [nodes amount] [log mode - (0: no logs, 1: tor and chat, 2: only chat)]"
+    echo "Usage: ./tor.sh [nodes amount] [log mode - (0: no logs, 1: tor and chat, 2: only chat)]"
     exit 1
 fi
 

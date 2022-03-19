@@ -5,6 +5,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ChatDb struct {
@@ -142,18 +143,19 @@ func (db *ChatDb) RegisterDB(username string, password string) (bool, error) {
 	helps for login
 */
 func (db *ChatDb) CheckUsersPassword(username string, password string) bool {
-	var dbPassword string
+	var dbPasswordHash string
 	sql := `
 		SELECT password FROM users WHERE username = ?;
 	`
 
-	err := db.QueryRow(sql, username).Scan(&dbPassword)
+	err := db.QueryRow(sql, username).Scan(&dbPasswordHash)
 	if err != nil {
 		return false // username not found
 	}
 
 	// does the password input match the db password
-	return dbPassword == password
+	err = bcrypt.CompareHashAndPassword([]byte(dbPasswordHash), []byte(password))
+	return err == nil
 }
 
 func (db *ChatDb) isRoomPassword(roomID int, roomPassword string) bool {

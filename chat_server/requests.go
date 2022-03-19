@@ -2,6 +2,8 @@ package chat_server
 
 import (
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // registers a user to the db if his username does not exists already
@@ -10,12 +12,17 @@ func Register(req *RegisterRequest) interface{} {
 		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "invalid password or username"}
 	}
 
-	ok, err := db.RegisterDB(req.Username, req.Password)
-	logger.Info.Println("got the register ans and it is : ", ok)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
+	if err != nil {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "something went wrong"}
+	}
+
+	ok, err := db.RegisterDB(req.Username, string(hash))
 
 	if err != nil {
 		logger.Err.Println(err)
-		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "db error"}
+		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "something went wrong"}
 	}
 
 	if ok {
@@ -444,7 +451,7 @@ func CancelUpdate(req *CancelUpdateRequest, client *Client) interface{} {
 	if req.RoomName == "" {
 		return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_FAILED, "no room for release cancel"}
 	}
-	
+
 	if !SetOfflineUserInRoom(req.RoomName, client.username) {
 		return GeneralResponse{CODE_CANCEL_UPDATE, STATUS_FAILED, "couldn't release the update request"}
 	}
@@ -475,7 +482,6 @@ func LeaveRoom(req *LeaveRoomRequest, client *Client) interface{} {
 	}
 	return GeneralResponse{CODE_LEAVE_ROOM, STATUS_FAILED, "user not in room"}
 }
-
 
 func SetOfflineUserInRoom(roomName string, username string) bool {
 	if roomName == "" {
