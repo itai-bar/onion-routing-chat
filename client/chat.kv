@@ -188,14 +188,6 @@
                     text: "Ban list"
                     on_release:
                         root.get_ban_list()
-            # AnchorLayout:
-            #     anchor_x: 'right'
-            #     anchor_y: 'bottom'
-            #     Button:
-            #         size_hint: 1, 0.5
-            #         text: "Close room"
-            #         on_release:
-            #             root.close_room()
 
 <MainWindow>:
     name: "main"
@@ -272,6 +264,24 @@
                     on_release:
                         root.go_to_main()
 
+<MessageLabel>:
+    # time
+    Label:
+        id: time
+        size_hint: None, None
+        font_size: 10
+        text: root.time_text
+    # sender
+    Label:
+        id: sender
+        size_hint: None, None
+        text: root.sender_text
+        color: 1, root.sender_color, 1, 1
+    Label:
+        id: content
+        size_hint_x: None
+        text: root.content_text
+
 <ChatWindow>:
     name: "chat"
 
@@ -309,7 +319,8 @@
                 scroll_y: 0
                 text_size: self.size
                 valign: "middle"
-                viewclass: "Label"
+                # viewclass: "Label"
+                viewclass: "MessageLabel"
 
                 RecycleBoxLayout:
                     orientation: "vertical"

@@ -37,6 +37,7 @@ class ChatClient:
     def __init__(self):
         priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
         rsa_obj = Rsa(pub_key, priv_key)
+        self.username = ''
 
         self._client = TorClient(rsa_obj,
                                  sys.argv[1], sys.argv[2])

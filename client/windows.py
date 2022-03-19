@@ -8,6 +8,7 @@
 
 from concurrent.futures import thread
 from multiprocessing import managers
+from tokenize import String
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
@@ -18,7 +19,10 @@ from kivy.uix.button import Button
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.textinput import TextInput
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.properties import StringProperty, NumericProperty
 import atexit
 from functools import partial
 
@@ -33,10 +37,14 @@ import threading
 client = ChatClient()
 client.auth()
 
-def message_to_str(msg: dict) -> str:
+def message_to_str(msg: dict) -> tuple:
     # parsing the unix time sent with the message to a readable date
-    t = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
-    return f"{t} | {msg['sender']} - {msg['content']}"
+    time    = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
+    sender  = msg['sender']
+    content = msg['content']
+    sender_color = 255 if sender == client.username else 1
+
+    return time, sender + ':', content, sender_color
 
 def exit_handler():
     ChatWindow.getting_updates = False # stop the update request loop
@@ -62,11 +70,13 @@ class LoginWindow(Screen):
     
     def btn_login(self):
         resp = client.login(self.username.text, self.password.text)
+        username_tmp = self.username.text
         self.reset()
 
         if resp['status'] == STATUS_FAILED:
             popup('login error', resp['info'])
         else:
+            client.username = username_tmp
             self.wm.current = 'main'
             
     def btn_goto_signup(self):
@@ -227,6 +237,14 @@ class RoomsWindow(Screen):
     def go_to_main(self):
         self.wm.current = 'main'
     
+
+class MessageLabel(RecycleDataViewBehavior, BoxLayout):
+    time_text    = StringProperty()
+    sender_text  = StringProperty()
+    content_text = StringProperty()
+    sender_color = NumericProperty()
+
+    
 class ChatWindow(Screen):
     #TODO: add room members button functionallity
     messages = ListProperty()
@@ -243,8 +261,12 @@ class ChatWindow(Screen):
             msgs = client.get_update(self.manager.statedata.current_room)
 
             # reverse messages for better user experience
-            for msg in (msgs['messages'] or [])[::-1]:  
-                self.messages.append({'text' : message_to_str(msg)})
+            for msg in (msgs['messages'] or [])[::-1]:
+                time, sender, content, color = message_to_str(msg) 
+                self.messages.append({'time_text'   : time,
+                                      'sender_text' : sender,
+                                      'content_text': content,
+                                      'sender_color': color})
 
     def on_enter(self, *args):
         # allowing the update thread to loop
@@ -253,7 +275,11 @@ class ChatWindow(Screen):
 
         # reverse messages for better user experience
         for msg in (new_msgs['messages'] or [])[::-1]: 
-            self.messages.append({'text' : message_to_str(msg)})
+            time, sender, content, color = message_to_str(msg) 
+            self.messages.append({'time_text'   : time,
+                                  'sender_text' : sender,
+                                  'content_text': content,
+                                  'sender_color': color})
 
         # starting the update thread
         self.update_thread = threading.Thread(target=self.update_messages, daemon=True)
@@ -291,7 +317,6 @@ class ChatWindow(Screen):
         self.reset()
     
     def open_room_members_list(self):
-        print("opening room members list")
         roomMembersPopup = Popup(title=f"Room members", size_hint=(0.3,0.3), size=(200, 200))
         roomMembersPopup.content = RoomMembersPopup(self.wm, roomMembersPopup, self.manager.statedata.current_room)
         roomMembersPopup.open()
