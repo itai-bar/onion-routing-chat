@@ -24,6 +24,7 @@ CODE_IS_USER_IN_ROOM      = b"14"
 CODE_CANCEL_UPDATE        = b"15"
 CODE_LEAVE_ROOM           = b"16"
 CODE_GET_ROOM_MEMBERS     = b"17"
+CODE_GET_BANNED_MEMBERS   = b"18"
 CODE_ERR                  = b"99"
 
 STATUS_SUCCESS = 1
@@ -128,8 +129,12 @@ class ChatClient:
         return self._send_req(CODE_CANCEL_UPDATE, req)
 
     def get_room_members(self, room_name) -> dict:
-        req = { 'roomName' : room_name}
+        req = { 'roomName' : room_name }
         return self._send_req(CODE_GET_ROOM_MEMBERS, req)
+
+    def get_banned_members(self, room_name) -> dict:
+        req = { 'roomName' : room_name }
+        return self._send_req(CODE_GET_BANNED_MEMBERS, req)
 
             
 #TODO: to make it faster remove in master branch

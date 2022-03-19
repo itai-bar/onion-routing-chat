@@ -2,7 +2,6 @@ package chat_server
 
 import (
 	"time"
-
 )
 
 // registers a user to the db if his username does not exists already
@@ -536,6 +535,57 @@ func GetRoomMembers(req *GetRoomMembersRequest, client *Client) interface{} {
 	adminName := db._getAdminRoom(roomID)
 
 	return GetRoomMembersResponse{GeneralResponse{CODE_GET_ROOM_MEMBERS, STATUS_SUCCESS, "got room members successfully"}, adminName, onlineMembersNames, offlineMembersNames}
+}
+
+func GetBannedMembers(req *GetBannedMembersRequest, client *Client) interface{} {
+	roomID, err := db._getChatRoomID(req.RoomName)
+	if err != nil || roomID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GetBannedMembersResponse{
+			GeneralResponse{
+				CODE_GET_BANNED_MEMBERS,
+				STATUS_FAILED,
+				"room doesn't exists"},
+			nil}
+	}
+
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GetBannedMembersResponse{
+			GeneralResponse{
+				CODE_GET_BANNED_MEMBERS,
+				STATUS_FAILED,
+				"user doesn't exists"},
+			nil}
+	}
+
+	if !db._isUserInRoom(roomID, userID) {
+		return GetBannedMembersResponse{
+			GeneralResponse{
+				CODE_GET_BANNED_MEMBERS,
+				STATUS_FAILED,
+				"user not in room"},
+			nil}
+	}
+
+	bannedMembers, err := db.GetBannedMembersDB(roomID)
+	if err != nil {
+		logger.Err.Println(err)
+		return GetBannedMembersResponse{
+			GeneralResponse{
+				CODE_GET_BANNED_MEMBERS,
+				STATUS_FAILED,
+				"something went wrong"},
+			nil}
+	}
+
+	return GetBannedMembersResponse{
+		GeneralResponse{
+			CODE_GET_BANNED_MEMBERS,
+			STATUS_SUCCESS,
+			"Successfully sent banned members list"},
+		bannedMembers}
 }
 
 func IsUserLoggedin(username string) bool {

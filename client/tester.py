@@ -40,6 +40,7 @@ if __name__ == '__main__':
     assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_SUCCESS
 
     assert tester_tal.ban_user('my_room', 'itai')['status'] == STATUS_SUCCESS
+    assert tester_tal.get_banned_members('my_room')['status'] == STATUS_SUCCESS
     assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_FAILED
     assert tester_itai.unban_user('my_room', 'itai')['status'] == STATUS_FAILED
     assert tester_itai.join_room('my_room', 'room_pass')['status'] == STATUS_FAILED
@@ -53,6 +54,8 @@ if __name__ == '__main__':
     assert tester_itai.create_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
     assert tester_dan.join_room("my_room", "room_pass")['status'] == STATUS_FAILED
     assert tester_dan.join_room("itai_room", "room_strong_pass")['status'] == STATUS_SUCCESS
+
+    
 
     t = threading.Thread(target=tester_itai.get_updates, args=('my_room', ))
     t.start()

@@ -27,6 +27,7 @@ const (
 	CODE_CANCEL_UPDATE        = "15"
 	CODE_LEAVE_ROOM           = "16"
 	CODE_GET_ROOM_MEMBERS     = "17"
+	CODE_GET_BANNED_MEMBERS   = "18"
 	CODE_ERR                  = "99"
 )
 
@@ -134,4 +135,13 @@ type GetRoomMembersResponse struct {
 	AdminName           string   `json:"adminName"`
 	OnlineMembersNames  []string `json:"onlineMembers"`
 	OfflineMembersNames []string `json:"offlineMembers"`
+}
+
+type GetBannedMembersRequest struct {
+	RoomName string `json:"roomName"`
+}
+
+type GetBannedMembersResponse struct {
+	GeneralResponse
+	BannedMembers []string `json:"bannedMembers"`
 }

@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"crypto/sha256"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type ChatDb struct {
@@ -384,6 +385,33 @@ func (db *ChatDb) GetOfflineMembersInRoomDB(roomID int, onlineMembersNames []str
 	return membersNames, nil
 }
 
+func (db *ChatDb) GetBannedMembersDB(roomID int) ([]string, error) {
+	sql := `
+		SELECT users.username
+		FROM chats_members
+		INNER JOIN users
+		ON users.ID = chats_members.userID
+		WHERE chats_members.chatID = ? AND chats_members.state = 1;
+	`
+	var bannedMembers []string
+
+	rows, err := db.Query(sql, roomID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var memberName string
+
+		err = rows.Scan(&memberName)
+		if err != nil {
+			return nil, err
+		}
+
+		bannedMembers = append(bannedMembers, memberName)
+	}
+	return bannedMembers, nil
+}
 func CloseDB() {
 	db.Close()
 }
