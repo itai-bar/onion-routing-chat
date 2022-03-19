@@ -265,26 +265,27 @@
                         root.go_to_main()
 
 <MessageLabel>:
-    height:20
+    height:root.height_by_lines
     # time
     Label:
         id: time
         size_hint: None, None
         font_size: 10
         text: root.time_text
-        height:20
+        height:root.height_by_lines
     # sender
     Label:
         id: sender
         size_hint: None, None
         text: root.sender_text
         color: 1, root.sender_color, 1, 1
-        height:20
+        height:root.height_by_lines
     Label:
         id: content
-        size_hint_x: None
+        size_hint_x: 1
+        text_size:self.size
         text: root.content_text
-        height:20
+        height:root.height_by_lines
 
 <ChatWindow>:
     name: "chat"

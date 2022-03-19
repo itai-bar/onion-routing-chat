@@ -26,7 +26,11 @@ from kivy.properties import StringProperty, NumericProperty
 import atexit
 from functools import partial
 
+import numpy
+
 from chat_client import STATE_OFFLINE, STATE_ONLINE, ChatClient, STATUS_FAILED
+CHATS_IN_LINE = 50
+DISTANCE_BETWEEN_LINES = 20
 
 # parsing time
 from dateutil import parser
@@ -41,10 +45,13 @@ def message_to_str(msg: dict) -> tuple:
     # parsing the unix time sent with the message to a readable date
     time    = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
     sender  = msg['sender']
-    content = msg['content']
+    content, amount_of_lines = set_new_lines(msg['content'], CHATS_IN_LINE)
     sender_color = 255 if sender == client.username else 1
 
-    return time, sender + ':', content, sender_color
+    return time, sender + ':', content, sender_color, DISTANCE_BETWEEN_LINES*amount_of_lines
+
+def set_new_lines(content, line_size):
+    return "-\n".join([content[start_of_line:start_of_line+line_size] for start_of_line in range(0, len(content), line_size)]), int(numpy.ceil(len(content)/line_size))
 
 def exit_handler():
     ChatWindow.getting_updates = False # stop the update request loop
@@ -243,6 +250,7 @@ class MessageLabel(RecycleDataViewBehavior, BoxLayout):
     sender_text  = StringProperty()
     content_text = StringProperty()
     sender_color = NumericProperty()
+    height_by_lines = NumericProperty()
 
     
 class ChatWindow(Screen):
@@ -262,11 +270,12 @@ class ChatWindow(Screen):
 
             # reverse messages for better user experience
             for msg in (msgs['messages'] or [])[::-1]:
-                time, sender, content, color = message_to_str(msg) 
+                time, sender, content, color, height_by_lines = message_to_str(msg) 
                 self.messages.append({'time_text'   : time,
                                       'sender_text' : sender,
                                       'content_text': content,
-                                      'sender_color': color})
+                                      'sender_color': color,
+                                      'height_by_lines': height_by_lines})
 
     def on_enter(self, *args):
         # allowing the update thread to loop
@@ -275,11 +284,12 @@ class ChatWindow(Screen):
 
         # reverse messages for better user experience
         for msg in (new_msgs['messages'] or [])[::-1]: 
-            time, sender, content, color = message_to_str(msg) 
+            time, sender, content, color, height_by_lines = message_to_str(msg) 
             self.messages.append({'time_text'   : time,
                                   'sender_text' : sender,
                                   'content_text': content,
-                                  'sender_color': color})
+                                  'sender_color': color,
+                                  'height_by_lines': height_by_lines})
 
         # starting the update thread
         self.update_thread = threading.Thread(target=self.update_messages, daemon=True)
