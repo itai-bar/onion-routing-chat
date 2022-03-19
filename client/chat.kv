@@ -184,10 +184,8 @@
                 anchor_x: 'left'
                 anchor_y: 'bottom'
                 Button:
+                    id:banListOrMembersBttn
                     size_hint: 1, 0.5
-                    text: "Ban list"
-                    on_release:
-                        root.get_ban_list()
 
 <MainWindow>:
     name: "main"
@@ -304,7 +302,7 @@
                     root.leave_room()
             Button:
                 size_hint: .4,.1
-                text:'Room members'
+                text:'Room members/Ban list'
                 on_release:
                     root.open_room_members_list()
             Button:

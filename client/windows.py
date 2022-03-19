@@ -28,7 +28,7 @@ from functools import partial
 
 import numpy
 
-from chat_client import STATE_OFFLINE, STATE_ONLINE, ChatClient, STATUS_FAILED
+from chat_client import STATE_OFFLINE, STATE_ONLINE, STATE_BANNED, ChatClient, STATUS_FAILED
 CHATS_IN_LINE = 50
 DISTANCE_BETWEEN_LINES = 20
 
@@ -156,9 +156,15 @@ class RoomMembersPopup(GridLayout):
         self._roomName = roomName
         self.wm = wm
         self.PopupInstance = PopupInstance
-        self.on_enter()
+        self.get_and_add_room_members()
 
-    def on_enter(self):
+    def get_and_add_room_members(self, *args):
+        self.ids.banListOrMembersBttn.unbind(on_press=self.get_and_add_room_members)
+        self.ids.banListOrMembersBttn.bind(on_press=self.get_ban_list)
+        self.ids.roomMembers.clear_widgets()
+        self.PopupInstance.title="Room members"
+        self.ids.banListOrMembersBttn.text="Ban list"
+
         resp = client.get_room_members(self._roomName)
         if resp['status'] == STATUS_FAILED:
             popup('open room members list error', resp['info'])
@@ -172,16 +178,25 @@ class RoomMembersPopup(GridLayout):
         pass #TODO:add admin so it will be recognized as admin
 
     def _add_members_to_list(self, members, state):
+        if members == None:
+            return
         for member in members:            
-            name_and_state = member + " - " + ("Online" if state == STATE_ONLINE else "Offline")
+            name_and_state = member + " - " + ("Online" if state == STATE_ONLINE else ("Offline" if state == STATE_OFFLINE else "Banned"))
             print(name_and_state)
             self.ids.roomMembers.add_widget(Label(text=name_and_state, size_hint=(None, None), height=25))
-
-    def close_room(self):
-        print("ask for close room")  # included notice all online members that server doesn't exists anymore. (get them out?!)
     
-    def get_ban_list(self):
-        print("ask for users in ban")
+    def get_ban_list(self, *args):
+        self.ids.banListOrMembersBttn.unbind(on_press=self.get_ban_list)
+        self.ids.banListOrMembersBttn.bind(on_press=self.get_and_add_room_members)
+        self.ids.roomMembers.clear_widgets()
+        self.PopupInstance.title="Ban list"
+        self.ids.banListOrMembersBttn.text="Room members"
+
+        resp = client.get_banned_members(self._roomName)
+        if resp['status'] == STATUS_FAILED:
+            popup('open ban list error', resp['info'])
+        else:
+            self._add_members_to_list(resp['bannedMembers'], STATE_BANNED)
 
 class MainWindow(Screen):
     def __init__(self, wm, **kw):
@@ -328,7 +343,7 @@ class ChatWindow(Screen):
         self.ids.message.focus = True
     
     def open_room_members_list(self):
-        roomMembersPopup = Popup(title=f"Room members", size_hint=(0.3,0.3), size=(200, 200))
+        roomMembersPopup = Popup(size_hint=(0.3,0.3), size=(200, 200))
         roomMembersPopup.content = RoomMembersPopup(self.wm, roomMembersPopup, self.manager.statedata.current_room)
         roomMembersPopup.open()
     
