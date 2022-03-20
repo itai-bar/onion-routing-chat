@@ -351,20 +351,30 @@ class ChatWindow(Screen):
         req, args = cmd.split()[0], cmd.split()[1:]
         req       = req[1:]
         
-        cmd_map = { 'kick'   :  client.kick_user,
-                    'ban'    :  client.ban_user,
-                    'unban'  :  client.unban_user,
-                    'delete' :  client.delete_room
+        cmd_map = { 'kick'     :  client.kick_user,
+                    'ban'      :  client.ban_user,
+                    'unban'    :  client.unban_user,
+                    'delete'   :  client.delete_room
                 }
 
         try:
-            if len(args) != 1:
-                popup('command', '1 args needed for this command!')
+            if req == 'help':
+                self.print_commands()
+                return
             else:
                 resp = cmd_map[req](self.manager.statedata.current_room, args[0])
-                if resp['status'] == STATUS_FAILED:
-                    popup('command failed', resp['info'])
-                else:
-                    popup('command succeeded', resp['info'])
+            if resp['status'] == STATUS_FAILED:
+                popup('command failed', resp['info'])
+            else:
+                popup('command succeeded', resp['info'])
         except KeyError:
             popup('command error', 'command does not exists!')
+        except IndexError:
+            popup('command error', 'Invalid arguments')
+    
+    def print_commands(self):
+        commands = ['/kick [username]',
+                    '/ban [username]',
+                    '/unban [username]',
+                    '/delete [room password]']
+        popup('commands', '\n'.join(commands))
