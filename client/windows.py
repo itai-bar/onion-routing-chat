@@ -31,6 +31,8 @@ import numpy
 from chat_client import STATE_OFFLINE, STATE_ONLINE, STATE_BANNED, ChatClient, STATUS_FAILED
 CHATS_IN_LINE = 50
 DISTANCE_BETWEEN_LINES = 20
+ARGUMENTS_IDX = 1
+FUNC_IDX = 0
 
 # parsing time
 from dateutil import parser
@@ -351,18 +353,18 @@ class ChatWindow(Screen):
         req, args = cmd.split()[0], cmd.split()[1:]
         req       = req[1:]
         
-        cmd_map = { 'kick'     :  client.kick_user,
-                    'ban'      :  client.ban_user,
-                    'unban'    :  client.unban_user,
-                    'delete'   :  client.delete_room
+        cmd_map = { 'kick'     :  [client.kick_user, '[username]'],
+                    'ban'      :  [client.ban_user, '[username]'],
+                    'unban'    :  [client.unban_user, '[username]'],
+                    'delete'   :  [client.delete_room, '[room password]']
                 }
 
         try:
             if req == 'help':
-                self.print_commands()
+                self.print_commands(cmd_map)
                 return
             else:
-                resp = cmd_map[req](self.manager.statedata.current_room, args[0])
+                resp = cmd_map[req][FUNC_IDX](self.manager.statedata.current_room, args[0])
             if resp['status'] == STATUS_FAILED:
                 popup('command failed', resp['info'])
             else:
@@ -370,11 +372,10 @@ class ChatWindow(Screen):
         except KeyError:
             popup('command error', 'command does not exists!')
         except IndexError:
-            popup('command error', 'Invalid arguments')
-    
-    def print_commands(self):
-        commands = ['/kick [username]',
-                    '/ban [username]',
-                    '/unban [username]',
-                    '/delete [room password]']
-        popup('commands', '\n'.join(commands))
+            popup('command error', f'Invalid arguments\nusage:/{req} {cmd_map[req][ARGUMENTS_IDX]}')
+
+    def print_commands(self, cmd_map:dict):
+        commands_with_usage = []
+        for command, value in cmd_map.items():
+            commands_with_usage.append(f"{command} {value[ARGUMENTS_IDX]}")
+        popup('commands', '\n'.join(commands_with_usage))
