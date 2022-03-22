@@ -271,8 +271,8 @@ class MessageLabel(RecycleDataViewBehavior, BoxLayout):
 
     
 class ChatWindow(Screen):
-    #TODO: add room members button functionallity
     messages = ListProperty()
+    room_name_text = StringProperty()
     getting_updates = False # used outside of this class
     
     def __init__(self, wm, **kw):
@@ -295,6 +295,8 @@ class ChatWindow(Screen):
                                       'height_by_lines': height_by_lines})
 
     def on_enter(self, *args):
+        # showing the name of the room to the user
+        self.room_name_text = self.manager.statedata.current_room
         # allowing the update thread to loop
         ChatWindow.getting_updates = True
         new_msgs = client.load_messages(self.manager.statedata.current_room, 50, 0)

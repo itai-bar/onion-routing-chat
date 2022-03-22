@@ -264,14 +264,12 @@
 
 <MessageLabel>:
     height:root.height_by_lines
-    # time
     Label:
         id: time
         size_hint: None, None
         font_size: 10
         text: root.time_text
         height:root.height_by_lines
-    # sender
     Label:
         id: sender
         size_hint: None, None
@@ -293,6 +291,7 @@
 
         GridLayout: # Buttons - Leave&Members&Back
             row_force_default: True
+            size_hint_y: None
             row_default_height:root.height*0.1
             cols:3
             Button:
@@ -301,18 +300,19 @@
                 on_release:
                     root.leave_room()
             Button:
-                size_hint: .4,.1
+                size_hint: 0.4,0.1
                 text:'Room members/Ban list'
                 on_release:
                     root.open_room_members_list()
             Button:
-                size_hint: 0.25,1
+                size_hint: 0.25,0.1
                 text: "Back"
                 on_release:
                     root.go_to_rooms()
 
         GridLayout: 
             row_force_default: True
+            size_hint_y: None
             row_default_height:root.height*0.6
             cols:1
 
@@ -322,7 +322,6 @@
                 scroll_y: 0
                 text_size: self.size
                 valign: "middle"
-                # viewclass: "Label"
                 viewclass: "MessageLabel"
 
                 RecycleBoxLayout:
