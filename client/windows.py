@@ -48,7 +48,7 @@ def message_to_str(msg: dict) -> tuple:
     time    = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
     sender  = msg['sender']
     content, amount_of_lines = set_new_lines(msg['content'], CHATS_IN_LINE)
-    sender_color = 255 if sender == client.username else 1
+    sender_color = [255, 1, 255] if sender == client.username else [255, 255, 1]
 
     return time, sender + ':', content, sender_color, DISTANCE_BETWEEN_LINES*amount_of_lines
 
@@ -182,7 +182,7 @@ class RoomMembersPopup(GridLayout):
     def _add_members_to_list(self, members, state):
         if members == None:
             return
-        for member in members:            
+        for member in members:
             name_and_state = member + " - " + ("Online" if state == STATE_ONLINE else ("Offline" if state == STATE_OFFLINE else "Banned"))
             print(name_and_state)
             self.ids.roomMembers.add_widget(Label(text=name_and_state, size_hint=(None, None), height=25))
@@ -265,8 +265,11 @@ class RoomsWindow(Screen):
 class MessageLabel(RecycleDataViewBehavior, BoxLayout):
     time_text    = StringProperty()
     sender_text  = StringProperty()
+    sender_text_len = NumericProperty()
     content_text = StringProperty()
-    sender_color = NumericProperty()
+    red_color = NumericProperty()
+    green_color = NumericProperty()
+    blue_color = NumericProperty()
     height_by_lines = NumericProperty()
 
     
@@ -290,8 +293,11 @@ class ChatWindow(Screen):
                 time, sender, content, color, height_by_lines = message_to_str(msg) 
                 self.messages.append({'time_text'   : time,
                                       'sender_text' : sender,
+                                      'sender_text_len': len(sender),
                                       'content_text': content,
-                                      'sender_color': color,
+                                      'red_color': color[0],
+                                      'green_color': color[1],
+                                      'blue_color': color[2],
                                       'height_by_lines': height_by_lines})
 
     def on_enter(self, *args):
@@ -306,8 +312,11 @@ class ChatWindow(Screen):
             time, sender, content, color, height_by_lines = message_to_str(msg) 
             self.messages.append({'time_text'   : time,
                                   'sender_text' : sender,
+                                  'sender_text_len': len(sender),
                                   'content_text': content,
-                                  'sender_color': color,
+                                  'red_color': color[0],
+                                  'green_color': color[1],
+                                  'blue_color': color[2],
                                   'height_by_lines': height_by_lines})
 
         # starting the update thread
