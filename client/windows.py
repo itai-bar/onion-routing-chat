@@ -33,6 +33,9 @@ CHATS_IN_LINE = 50
 DISTANCE_BETWEEN_LINES = 20
 ARGUMENTS_IDX = 1
 FUNC_IDX = 0
+RED_COLOR = [1, 255, 255]
+GREEN_COLOR = [255, 1, 255]
+BLUE_COLOR = [255, 255, 1]
 
 # parsing time
 from dateutil import parser
@@ -48,7 +51,7 @@ def message_to_str(msg: dict) -> tuple:
     time    = parser.parse(msg['time']).strftime("%d.%m.%y %H:%M")
     sender  = msg['sender']
     content, amount_of_lines = set_new_lines(msg['content'], CHATS_IN_LINE)
-    sender_color = [255, 1, 255] if sender == client.username else [255, 255, 1]
+    sender_color = GREEN_COLOR if sender == client.username else BLUE_COLOR
 
     return time, sender + ':', content, sender_color, DISTANCE_BETWEEN_LINES*amount_of_lines
 
@@ -152,7 +155,14 @@ class PasswordPopup(GridLayout):
             self.PopupInstance.dismiss()
             self.wm.current = 'chat'
 
+class UserLabel(RecycleDataViewBehavior, BoxLayout):
+    username_text = StringProperty()
+    red_color = NumericProperty()
+    green_color = NumericProperty()
+    blue_color = NumericProperty()
+
 class RoomMembersPopup(GridLayout):
+    users = ListProperty()
     def __init__(self, wm, PopupInstance : Popup, roomName : str, **kwargs):
         super().__init__(**kwargs)
         self._roomName = roomName
@@ -163,7 +173,7 @@ class RoomMembersPopup(GridLayout):
     def get_and_add_room_members(self, *args):
         self.ids.banListOrMembersBttn.unbind(on_press=self.get_and_add_room_members)
         self.ids.banListOrMembersBttn.bind(on_press=self.get_ban_list)
-        self.ids.roomMembers.clear_widgets()
+        self.users = [] # clear last widges that was shown
         self.PopupInstance.title="Room members"
         self.ids.banListOrMembersBttn.text="Ban list"
 
@@ -184,13 +194,17 @@ class RoomMembersPopup(GridLayout):
             return
         for member in members:
             name_and_state = member + " - " + ("Online" if state == STATE_ONLINE else ("Offline" if state == STATE_OFFLINE else "Banned"))
+            color = (GREEN_COLOR if state == STATE_ONLINE else ([1, 1, 1] if state == STATE_OFFLINE else RED_COLOR))
             print(name_and_state)
-            self.ids.roomMembers.add_widget(Label(text=name_and_state, size_hint=(None, None), height=25))
+            self.users.append({'username_text'   : name_and_state,
+                               'red_color': color[0],
+                               'green_color': color[1],
+                               'blue_color': color[2]})
     
     def get_ban_list(self, *args):
         self.ids.banListOrMembersBttn.unbind(on_press=self.get_ban_list)
         self.ids.banListOrMembersBttn.bind(on_press=self.get_and_add_room_members)
-        self.ids.roomMembers.clear_widgets()
+        self.users = [] # clear last widges that was shown
         self.PopupInstance.title="Ban list"
         self.ids.banListOrMembersBttn.text="Room members"
 
@@ -293,7 +307,6 @@ class ChatWindow(Screen):
                 time, sender, content, color, height_by_lines = message_to_str(msg) 
                 self.messages.append({'time_text'   : time,
                                       'sender_text' : sender,
-                                      'sender_text_len': len(sender),
                                       'content_text': content,
                                       'red_color': color[0],
                                       'green_color': color[1],

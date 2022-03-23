@@ -157,9 +157,18 @@
             on_release:
                 root.btn_create_room()
 
+<UserLabel>:
+    height:25
+    Label:
+        id:username
+        text:root.username_text
+        color: root.red_color, root.green_color, root.blue_color, 1
+        height:25
+        size_hint: None, None
+
 <RoomMembersPopup>:
     id:RoomMembersPopup
-    roomMembers:roomMembers
+    #roomMembers:roomMembers
 
     rows:2
     cols:1
@@ -170,14 +179,20 @@
             rows:1
             row_force_default:True
             row_default_height:root.height*0.74
-            ScrollView:
-                do_scroll_x: False
-                do_scroll_y: True
-                GridLayout:
-                    cols:1
+            RecycleView:
+                pos_hint: {"x":0.01, "y":0.7}
+                data: root.users
+                scroll_y: 0
+                text_size: self.size
+                valign: "middle"
+                viewclass: "UserLabel"
+
+                RecycleBoxLayout:
+                    orientation: "vertical"
                     size_hint_y: None
-                    height: self.minimum_height
-                    id: roomMembers
+                    height: self.minimum_size[1]
+                    default_size_hint: 1, None
+                    default_size: None, None
         GridLayout:
             cols:1
             AnchorLayout:
