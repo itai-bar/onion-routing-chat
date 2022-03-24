@@ -36,6 +36,7 @@ FUNC_IDX = 0
 RED_COLOR = [1, 255, 255]
 GREEN_COLOR = [255, 1, 255]
 BLUE_COLOR = [255, 255, 1]
+ADMIN_COLOR = [0, 63, 52]
 
 # parsing time
 from dateutil import parser
@@ -181,13 +182,17 @@ class RoomMembersPopup(GridLayout):
         if resp['status'] == STATUS_FAILED:
             popup('open room members list error', resp['info'])
         else:
-            self._add_admin_to_list(resp['adminName'])
             self._add_members_to_list(resp['onlineMembers'], STATE_ONLINE)
             self._add_members_to_list(resp['offlineMembers'], STATE_OFFLINE)
+            self._set_admin_in_list(resp['adminName'])
+            self.PopupInstance.title += " ---> Online members: " + f"{str(len(resp['onlineMembers']))}/{str((len(resp['offlineMembers']))+len(resp['onlineMembers']))}"
 
-    def _add_admin_to_list(self, admin_name):
-        print("admin is:", admin_name)
-        pass #TODO:add admin so it will be recognized as admin
+    def _set_admin_in_list(self, admin_name):
+        for member in self.users:
+            if member['username_text'].startswith(admin_name) and member['username_text'][len(admin_name):] in [" - Online", " - Offline"]: # check if admin and not just stars with name of admin
+                member['username_text'] = "Admin:" + member['username_text']
+                member['red_color'], member['green_color'], member['blue_color'] = ADMIN_COLOR
+                break # only one admin, no need to continue searching
 
     def _add_members_to_list(self, members, state):
         if members == None:
@@ -369,7 +374,7 @@ class ChatWindow(Screen):
         self.ids.message.focus = True
     
     def open_room_members_list(self):
-        roomMembersPopup = Popup(size_hint=(0.3,0.3), size=(200, 200))
+        roomMembersPopup = Popup(size_hint=(None,None), size=(400, 300))
         roomMembersPopup.content = RoomMembersPopup(self.wm, roomMembersPopup, self.manager.statedata.current_room)
         roomMembersPopup.open()
     
