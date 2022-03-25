@@ -243,7 +243,7 @@ func HandleRequests(code string, data []byte, client *Client) string {
 		resp = LoadMessages(&req, client)
 
 	case CODE_GET_ROOMS:
-		resp = GetRooms()
+		resp = GetRooms(client)
 
 	case CODE_IS_USER_IN_ROOM:
 		var req UserInRoomRequest

@@ -393,8 +393,14 @@ func LoadMessages(req *LoadRoomsMessagesRequest, client *Client) interface{} {
 	return LoadRoomsMessagesResponse{GeneralResponse{CODE_LOAD_MESSAGES, STATUS_SUCCESS, "load messages successfuly"}, messages}
 }
 
-func GetRooms() interface{} {
-	rooms, err := db.GetRoomsDB()
+func GetRooms(client *Client) interface{} {
+	userID, err := db._getUserID(client.username)
+	if err != nil || userID == WITHOUT_ID {
+		logger.Err.Println(err)
+		return GeneralResponse{CODE_GET_ROOMS, STATUS_FAILED, "user doesn't exists"}
+	}
+
+	rooms, err := db.GetRoomsDB(userID)
 	if err != nil {
 		return GeneralResponse{CODE_GET_ROOMS, STATUS_FAILED, "something went wrong"}
 	}

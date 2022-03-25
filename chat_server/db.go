@@ -97,7 +97,7 @@ func InitDb(path string) (*sql.DB, error) {
 }
 
 func (db *ChatDb) LoadRoomsFromDB() error {
-	rooms, err := db.GetRoomsDB()
+	rooms, err := db.GetRoomsDB(-1)
 	if err != nil {
 		return err
 	}
@@ -311,13 +311,30 @@ func (db *ChatDb) LoadLastMessages(roomId int, amount int, offset int) ([]Messag
 	return messages, err
 }
 
-func (db *ChatDb) GetRoomsDB() ([]string, error) {
-	sql := `
-		SELECT name FROM chats
-	`
+// set userID to -1 to get all room on the db
+// else the function will get all the rooms the user
+// isn't banned from
+func (db *ChatDb) GetRoomsDB(userID int) ([]string, error) {
+	sql := "SELECT name FROM chats"
+	if userID != -1 {
+		// selecting all rooms but the ones that userID is banned on
+		sql = `
+			SELECT name
+			FROM chats
+
+			WHERE id NOT IN (
+				SELECT chats.ID
+				FROM chats
+				INNER JOIN chats_members
+				ON chats_members.chatID = chats.ID
+				WHERE chats_members.ID = ? AND chats_members.state = 1
+			)
+		`
+	}
+
 	var rooms []string
 
-	rows, err := db.Query(sql)
+	rows, err := db.Query(sql, userID)
 	if err != nil {
 		return nil, err
 	}
