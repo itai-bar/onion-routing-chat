@@ -327,7 +327,7 @@ func (db *ChatDb) GetRoomsDB(userID int) ([]string, error) {
 				FROM chats
 				INNER JOIN chats_members
 				ON chats_members.chatID = chats.ID
-				WHERE chats_members.ID = ? AND chats_members.state = 1
+				WHERE chats_members.userID = ? AND chats_members.state = 1
 			)
 		`
 	}
