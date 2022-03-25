@@ -6,6 +6,9 @@ import (
 
 // registers a user to the db if his username does not exists already
 func Register(req *RegisterRequest) interface{} {
+	if req.Password == "" {
+		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "password cant be empty!"}
+	}
 	if req.Username == "" || !isValidPassword(req.Password) {
 		return GeneralResponse{CODE_REGISTER, STATUS_FAILED, "invalid password or username"}
 	}
@@ -25,6 +28,9 @@ func Register(req *RegisterRequest) interface{} {
 
 // logs the user into the system if his password and username are correct
 func Login(req *LoginRequest, client *Client) interface{} {
+	if req.Password == "" {
+		return GeneralResponse{CODE_LOGIN, STATUS_FAILED, "password cant be empty!"}
+	}
 	if db.CheckUsersPassword(req.Username, req.Password) {
 		if IsUserLoggedin(req.Username) {
 			return GeneralResponse{CODE_LOGIN, STATUS_FAILED, "user already logged in"}
@@ -283,6 +289,10 @@ func UnBanFromChatRoom(req *UnBanFromChatRoomRequest, client *Client) interface{
 }
 
 func SendMessage(req *SendMessageRequest, client *Client) interface{} {
+	if req.Content == "" {
+		return GeneralResponse{CODE_SEND_MESSAGE, STATUS_FAILED, "cant send empty message"}
+	}
+	
 	roomID, err := db._getChatRoomID(req.RoomName)
 	if err != nil || roomID == WITHOUT_ID {
 		logger.Err.Println(err)
