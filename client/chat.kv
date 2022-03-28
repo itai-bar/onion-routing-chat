@@ -1,3 +1,26 @@
+<WelcomeWindow>:
+    name: "welcome"
+
+    FloatLayout:
+        Label:
+            text:'Welcome to Tor-Based chat!'
+            font_size: (root.width**2 + root.height**2) / 13**4
+            pos_hint: {"x":0.32, "top":1}
+            size_hint: 0.35, 0.15
+        
+        Label:
+            text:'Program in progress it may take several seconds...'
+            font_size: (root.width**2 + root.height**2) / 14.5**4
+            pos_hint: {"x":0.32, "top":0.5}
+            size_hint: 0.35, 0.15
+
+        Label:
+            text:'© By Itai and Tal'
+            font_size: (root.width**2 + root.height**2) / 15**4
+            pos_hint: {"x":-0.02, "top":0.6}
+        
+        
+
 <LoginWindow>:
     name: "login"
 

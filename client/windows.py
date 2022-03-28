@@ -8,7 +8,6 @@
 
 from concurrent.futures import thread
 from multiprocessing import managers
-from tokenize import String
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
@@ -45,7 +44,6 @@ import datetime as dt
 import threading
 
 client = ChatClient()
-client.auth()
 
 def message_to_str(msg: dict) -> tuple:
     # parsing the unix time sent with the message to a readable date
@@ -72,6 +70,21 @@ def popup(title, text):
                   content=Label(text=text),
                   size_hint=(None, None), size=(400, 400))
     pop.open()
+
+class EmptyWindow(Screen):
+    def __init__(self, wm, **kw):
+        self.wm = wm
+        super().__init__(**kw)
+
+class WelcomeWindow(Screen):
+    def __init__(self, wm, **kw):
+        self.wm = wm
+        super().__init__(**kw)
+
+    def on_enter(self, *args):
+        client.load_RSA_keys()
+        client.auth()
+        self.wm.current = 'login'
 
 class LoginWindow(Screen):
     username = ObjectProperty(None)

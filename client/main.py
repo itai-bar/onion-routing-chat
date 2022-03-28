@@ -4,7 +4,7 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.event import EventDispatcher
 from kivy.properties import ObjectProperty
 
-from windows import LoginWindow, MainWindow, RoomsWindow, SignupWindow, ChatWindow
+from windows import EmptyWindow, WelcomeWindow, LoginWindow, MainWindow, RoomsWindow, SignupWindow, ChatWindow
 
 class MyState(EventDispatcher):
     current_room = ''
@@ -36,18 +36,20 @@ class Chat:
     def __init__(self) -> None:
         kv = Builder.load_file('chat.kv')
         self.window_manager = WindowManager()
-
+        
         self._screens = [LoginWindow(self.window_manager, name='login'),
+                         WelcomeWindow(self.window_manager, name='welcome'),
                          SignupWindow(self.window_manager, name='signup'),
                          RoomsWindow(self.window_manager, name='rooms'),
                          MainWindow(self.window_manager, name='main'),
                          ChatWindow(self.window_manager, name='chat')] 
 
+        self.window_manager.add_widget(EmptyWindow(self.window_manager, name='empty')) # for better UE
         for screen in self._screens:
             self.window_manager.add_widget(screen)
         
-        self.window_manager.current = 'login'
-        #self.window_manager.current = 'rooms'
+        self.window_manager.current = 'welcome'
+
 
 if __name__ == '__main__':
     chat = Chat()

@@ -2,6 +2,7 @@ from tor.client import TorClient
 from tor.crypto import Rsa, Aes
 
 import sys
+from os import path
 import json
 
 COOKIE_SIZE = 15
@@ -37,12 +38,17 @@ KEYS_FILES_NAME = 'keys.pem'
 
 class ChatClient:
     def __init__(self):
-        priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
-        rsa_obj = Rsa(pub_key, priv_key)
         self.username = ''
+        self._client = None
 
-        self._client = TorClient(rsa_obj,
-                                 sys.argv[1], sys.argv[2])
+    def load_RSA_keys(self):
+        priv_key, pub_key = None, None
+        if path.exists(KEYS_FILES_NAME):
+           priv_key, pub_key = load_RSA_from_file(KEYS_FILES_NAME)
+
+        rsa_obj = Rsa(pub_key, priv_key)
+        write_RSA_to_file(KEYS_FILES_NAME, rsa_obj)
+        self._client = TorClient(rsa_obj, sys.argv[1], sys.argv[2])
 
     def auth(self):
         msg = CODE_AUTH + self._client._rsa.pem_public_key
