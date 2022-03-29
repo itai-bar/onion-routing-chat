@@ -326,7 +326,7 @@
     name: "chat"
 
     GridLayout:
-        rows:3
+        rows:4
 
         GridLayout: # Buttons - Leave&Members&Back
             row_force_default: True
@@ -349,14 +349,31 @@
                 on_release:
                     root.go_to_rooms()
 
+        FloatLayout:
+            #row_force_default: True
+            size_hint:None, None
+            size:root.width, root.height*0.03
+            #row_default_height:root.height*0.0001
+            
+            Label:
+                text:'Logged as:'
+                pos_hint: {"x":0.01, "y":1}
+                text_size: self.size
+            Label:
+                id:username_text
+                color: 255, 1, 255, 1
+                text_size: self.size
+                size: self.texture_size
+                pos_hint: {"x":0.1, "y":1}
+
         GridLayout: 
             row_force_default: True
             size_hint_y: None
-            row_default_height:root.height*0.6
+            row_default_height:root.height*0.68
             cols:1
 
             RecycleView:
-                pos_hint: {"x":0.01, "y":0.7}
+                pos_hint: {"x":0.01, "y":1}
                 data: root.messages
                 scroll_y: 0
                 text_size: self.size
