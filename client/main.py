@@ -1,6 +1,6 @@
 from kivy.app import App
 from kivy.lang import Builder
-from kivy.uix.screenmanager import ScreenManager
+from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.event import EventDispatcher
 from kivy.properties import ObjectProperty
 
@@ -35,7 +35,7 @@ class ChatApp(App):
 class Chat:
     def __init__(self) -> None:
         kv = Builder.load_file('chat.kv')
-        self.window_manager = WindowManager()
+        self.window_manager = WindowManager(transition=NoTransition())
         
         self._screens = [LoginWindow(self.window_manager, name='login'),
                          WelcomeWindow(self.window_manager, name='welcome'),
