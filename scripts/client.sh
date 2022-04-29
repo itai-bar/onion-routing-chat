@@ -1,6 +1,6 @@
 #!/bin/bash
 SERVER_CONTAINER_IP=$(docker ps |
-                    grep 'torbasedchat_chat_server' |
+                    grep 'chat_server' |
                     awk '{print $1;}' |
                     xargs docker inspect |
                     grep '"IPAddress"' |
