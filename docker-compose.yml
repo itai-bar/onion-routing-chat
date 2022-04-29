@@ -1,0 +1,42 @@
+version: '3'
+
+networks:
+  mynetwork:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+services:
+  chat_server:
+    image: chat_server
+    build:
+      context: .
+      dockerfile: ./cmd/chat_server/Dockerfile
+    expose:
+      - 8989
+    networks:
+      mynetwork: # under same subnet
+    depends_on:
+      - router
+  router:
+    image: router
+    build:
+      context: .
+      dockerfile: ./cmd/router/Dockerfile
+    expose:
+      - 7777
+    networks:
+      mynetwork:
+        ipv4_address: 172.20.0.2
+  node:
+    image: node
+    build:
+      context: .
+      dockerfile: ./cmd/node/Dockerfile
+    expose:
+      - 8989
+    networks:
+      mynetwork: # under same subnet
+    depends_on:
+      - router
+

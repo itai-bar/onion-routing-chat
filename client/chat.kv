@@ -1,0 +1,407 @@
+<WelcomeWindow>:
+    name: "welcome"
+
+    FloatLayout:
+        Label:
+            text:'Welcome to Tor-Based chat!'
+            font_size: (root.width**2 + root.height**2) / 13**4
+            pos_hint: {"x":0.32, "top":1}
+            size_hint: 0.35, 0.15
+        
+        Label:
+            text:'Program in progress it may take several seconds...'
+            font_size: (root.width**2 + root.height**2) / 14.5**4
+            pos_hint: {"x":0.32, "top":0.5}
+            size_hint: 0.35, 0.15
+
+        Label:
+            text:'© By Itai and Tal'
+            font_size: (root.width**2 + root.height**2) / 15**4
+            pos_hint: {"x":-0.02, "top":0.6}
+        
+        
+
+<LoginWindow>:
+    name: "login"
+
+    username: username
+    password: password
+
+    FloatLayout:
+
+        Label:
+            text:"Username: "
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.1, "top":0.9}
+            size_hint: 0.35, 0.15
+
+        TextInput:
+            id: username
+            multiline: False
+            write_tab: False
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.45, "top":0.9}
+            size_hint: 0.4, 0.15
+            on_text_validate: root.btn_login()
+ 
+        Label:
+            text:"Password: "
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.1, "top":0.7}
+            size_hint: 0.35, 0.15
+
+        TextInput:
+            id: password
+            password: True
+            multiline: False
+            write_tab: False
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.45, "top":0.7}
+            size_hint: 0.4, 0.15
+            on_text_validate: root.btn_login()
+               
+        Button:
+            pos_hint:{"x":0.2,"y":0.05}
+            size_hint: 0.6, 0.2
+            font_size: (root.width**2 + root.height**2) / 13**4
+            text: "Login"
+            on_release:
+                root.btn_login()
+
+        Button:
+            pos_hint:{"x":0.3,"y":0.3}
+            size_hint: 0.4, 0.1
+            font_size: (root.width**2 + root.height**2) / 17**4
+            text: "Don't have an Account? Create One"
+            on_release:
+                root.btn_goto_signup()
+
+<SignupWindow>:
+    name: "signup"
+
+    username: username
+    password: password
+
+    FloatLayout:
+
+        Label:
+            text:"Username: "
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.1, "top":0.9}
+            size_hint: 0.35, 0.15
+
+        TextInput:
+            id: username
+            multiline: False
+            write_tab: False
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.45, "top":0.9}
+            size_hint: 0.4, 0.15
+            on_text_validate: root.btn_signup()
+ 
+        Label:
+            text:"Password: "
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.1, "top":0.7}
+            size_hint: 0.35, 0.15
+
+        TextInput:
+            id: password
+            password: True
+            multiline: False
+            write_tab: False
+            font_size: (root.width**2 + root.height**2) / 13**4 
+            pos_hint: {"x":0.45, "top":0.7}
+            size_hint: 0.4, 0.15
+            on_text_validate: root.btn_signup()
+               
+        Button:
+            pos_hint:{"x":0.2,"y":0.01}
+            size_hint: 0.6, 0.2
+            font_size: (root.width**2 + root.height**2) / 13**4
+            text: "Signup"
+            on_release:
+                root.btn_signup()
+
+        Button:
+            pos_hint:{"x":0.3,"y":0.25}
+            size_hint: 0.4, 0.1
+            font_size: (root.width**2 + root.height**2) / 17**4
+            text: "Already have an account? Login"
+            on_release:
+                root.btn_goto_login()
+
+<PasswordPopup>:
+    id: PasswordPopup
+    rows:2
+    cols:1
+    GridLayout:
+        rows:2
+        cols:1
+        
+        TextInput:
+            id:roomPassword
+            password:True
+            multiline: False
+            write_tab: False
+            on_text_validate: root.btn_enter_room()
+        Button:
+            text:"Enter room"
+            on_release:
+                root.btn_enter_room()
+
+<CreateRoomPopup>:
+    id: CreateRoomPopup
+    rows:3
+    cols:1
+    GridLayout:
+        rows:3
+        cols:1
+        GridLayout:
+            
+            cols:2
+            Label:
+                text:'Name:'
+            TextInput:
+                id:roomName
+                multiline: False
+                write_tab: False
+                on_text_validate: root.btn_create_room()
+            Label:
+                text:'Password:'
+            TextInput:
+                id:roomPassword
+                password:True
+                multiline: False
+                write_tab: False
+                on_text_validate: root.btn_create_room()
+        Button:
+            text:"Enter room"
+            on_release:
+                root.btn_create_room()
+
+<UserLabel>:
+    height:25
+    Label:
+        id:username
+        text:root.username_text
+        color: root.red_color, root.green_color, root.blue_color, 1
+        height:25
+        size_hint: None, None
+        size: self.texture_size
+
+<RoomMembersPopup>:
+    id:RoomMembersPopup
+
+    rows:2
+    cols:1
+
+    GridLayout:
+        rows:2
+        GridLayout:
+            rows:1
+            row_force_default:True
+            row_default_height:root.height*0.74
+            RecycleView:
+                pos_hint: {"x":0.01, "y":0.7}
+                data: root.users
+                scroll_y: 0
+                text_size: self.size
+                valign: "middle"
+                viewclass: "UserLabel"
+
+                RecycleBoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_size[1]
+                    default_size_hint: 1, None
+                    default_size: None, None
+        GridLayout:
+            cols:1
+            AnchorLayout:
+                anchor_x: 'left'
+                anchor_y: 'bottom'
+                Button:
+                    id:banListOrMembersBttn
+                    size_hint: 1, 0.5
+
+<MainWindow>:
+    name: "main"
+
+    GridLayout:
+        rows: 3
+        
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'bottom'
+            Button:
+                size_hint: 0.4, 0.7
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Room List"
+                on_release:
+                    root.btn_goto_rooms()
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
+            Button:
+                size_hint: 0.4, 0.7
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Create Room"
+                on_release:
+                    root.btn_create_room()
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
+            Button:
+                size_hint: 0.2, 0.35
+                font_size: (root.width**2 + root.height**2) / 13**4
+                text:"Logout"
+                on_release:
+                    root.btn_logout()
+
+<RoomsWindow>:
+    name: "rooms"
+
+    roomsNames: roomsNames
+    
+    GridLayout:
+        rows:2
+        GridLayout:
+            rows:1
+            row_force_default:True
+            row_default_height:root.height*0.9
+            ScrollView:
+                do_scroll_x: False
+                do_scroll_y: True
+                GridLayout:
+                    cols:4
+                    size_hint_y: None
+                    height: self.minimum_height
+                    id: roomsNames
+        GridLayout:
+            cols:2
+            AnchorLayout:
+                anchor_x: 'left'
+                anchor_y: 'bottom'
+                Button:
+                    size_hint: 1.3, 0.2
+                    size:root.width*0.5, root.height*0.25
+                    text: "Refresh rooms"
+                    on_release:
+                        root.clean_rooms()
+                        root.load_rooms()
+            AnchorLayout:
+                anchor_x: 'right'
+                anchor_y: 'bottom'
+                Button:
+                    size_hint: 0.7, 0.2
+                    text: "Back"
+                    size:root.width*0.25, root.height*0.25
+                    on_release:
+                        root.go_to_main()
+
+<MessageLabel>:
+    height:root.height_by_lines
+    Label:
+        id: time
+        size_hint: None, None
+        font_size: 10
+        text: root.time_text
+        height:root.height_by_lines
+    Label:
+        id: sender
+        size_hint: None, None
+        text: root.sender_text
+        color: root.red_color, root.green_color, root.blue_color, 1
+        height:root.height_by_lines
+        size: self.texture_size
+    Label:
+        id: content
+        size_hint_x: 1
+        text_size:self.size
+        text: root.content_text
+        height:root.height_by_lines
+
+<ChatWindow>:
+    name: "chat"
+
+    GridLayout:
+        rows:4
+
+        GridLayout: # Buttons - Leave&Members&Back
+            row_force_default: True
+            size_hint_y: None
+            row_default_height:root.height*0.1
+            cols:3
+            Button:
+                size_hint: 0.15,0.1
+                text:'Leave room'
+                on_release:
+                    root.leave_room()
+            Button:
+                size_hint: 0.4,0.1
+                text:'Room members/Ban list'
+                on_release:
+                    root.open_room_members_list()
+            Button:
+                size_hint: 0.25,0.1
+                text: "Back"
+                on_release:
+                    root.go_to_rooms()
+
+        FloatLayout:
+            #row_force_default: True
+            size_hint:None, None
+            size:root.width, root.height*0.03
+            #row_default_height:root.height*0.0001
+            
+            Label:
+                text:'Logged as:'
+                pos_hint: {"x":0.01, "y":1}
+                text_size: self.size
+            Label:
+                id:username_text
+                color: 255, 1, 255, 1
+                text_size: self.size
+                size: self.texture_size
+                pos_hint: {"x":0.1, "y":1}
+
+        GridLayout: 
+            row_force_default: True
+            size_hint_y: None
+            row_default_height:root.height*0.68
+            cols:1
+
+            RecycleView:
+                pos_hint: {"x":0.01, "y":1}
+                data: root.messages
+                scroll_y: 0
+                text_size: self.size
+                valign: "middle"
+                viewclass: "MessageLabel"
+
+                RecycleBoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_size[1]
+                    default_size_hint: 1, None
+                    default_size: None, None
+            
+
+        FloatLayout:
+            row_force_default: True
+            row_default_height:root.height*0.15
+            TextInput:
+                id:message
+                pos_hint: {"x":0.01, "y":0.025}
+                size_hint: 0.8, 0.15
+                multiline: False
+                text_validate_unfocus:False
+                on_text_validate:
+                    root.send_message()
+
+            Button:
+                pos_hint: {"x":0.83, "y":0.02}
+                size_hint: 0.15, 0.155
+                text:'Send'
+                on_release:root.send_message()
